@@ -1,0 +1,182 @@
+Sub TaoDonXinHocNghe()
+    Dim wdApp As Object
+    Dim wdDoc As Object
+    Dim wdTargetDoc As Object
+    Dim wsHV As Worksheet
+    Dim wsKhoaHoc As Worksheet
+    Dim lastRow As Long
+    Dim i As Long
+
+    Dim templatePath As String
+    Dim outputPath As String
+    Dim tenNghe As String
+    Dim tenKhoa As String
+    Dim thon As String
+    Dim xa As String
+    Dim tinh As String
+
+    ' Set worksheets
+    Set wsHV = ThisWorkbook.Sheets("Thông tin HV")
+    Set wsKhoaHoc = ThisWorkbook.Sheets("KHÓA HỌC")
+
+    ' Get course information
+    tenKhoa = wsKhoaHoc.Cells(3, 4).Value ' Khóa học (D3)
+    tenNghe = wsKhoaHoc.Cells(5, 3).Value ' Theo yêu cầu: ô C4 (cột 3, dòng 5)
+
+    ' Địa điểm đào tạo (Thôn, Xã, Tỉnh)
+    thon = wsKhoaHoc.Cells(17, 4).Value ' Thôn
+    xa = wsKhoaHoc.Cells(18, 4).Value ' Xã
+    tinh = wsKhoaHoc.Cells(19, 4).Value ' Tỉnh
+
+    ' Paths
+    templatePath = ThisWorkbook.Path & "\Templates\Don xin hoc nghe.doc"
+    outputPath = ThisWorkbook.Path & "\Don xin hoc nghe " & tenNghe & " - " & tenKhoa & ".docx"
+
+    ' Check if template exists
+    If Dir(templatePath) = "" Then
+        MsgBox "Khong tim thay file mau tai: " & templatePath, vbCritical
+        Exit Sub
+    End If
+
+    ' Initialize Word Application
+    On Error Resume Next
+    Set wdApp = GetObject(, "Word.Application")
+    If wdApp Is Nothing Then
+        Set wdApp = CreateObject("Word.Application")
+    End If
+    On Error GoTo 0
+
+    wdApp.Visible = False ' Run in background
+
+    ' Create target document
+    Set wdTargetDoc = wdApp.Documents.Add
+
+    ' Find last row in Thong tin HV (using Column 2 - Họ và tên)
+    lastRow = wsHV.Cells(wsHV.Rows.Count, 2).End(xlUp).Row
+
+    ' Start processing each student
+    Dim count As Integer
+    count = 0
+
+    For i = 3 To lastRow ' Start from row 3
+        If wsHV.Cells(i, 2).Value <> "" Then ' Cột 2 (Họ và tên)
+            count = count + 1
+
+            ' Open template
+            Set wdDoc = wdApp.Documents.Open(templatePath)
+
+            ' Fetch student data according to exactly specified columns
+            Dim hoTen As String: hoTen = wsHV.Cells(i, 2).Value ' Cột 2
+
+            Dim ngaySinh As String
+            If IsDate(wsHV.Cells(i, 3).Value) Then
+                ngaySinh = Format(wsHV.Cells(i, 3).Value, "dd/MM/yyyy")
+            Else
+                ngaySinh = wsHV.Cells(i, 3).Value ' Cột 3
+            End If
+
+            Dim gioiTinh As String: gioiTinh = wsHV.Cells(i, 4).Value ' Cột 4
+            Dim cccd As String: cccd = wsHV.Cells(i, 5).Value ' Cột 5
+            Dim noiCap As String: noiCap = wsHV.Cells(i, 6).Value ' Cột 6
+
+            Dim ngayCap As String
+            If IsDate(wsHV.Cells(i, 7).Value) Then
+                ngayCap = Format(wsHV.Cells(i, 7).Value, "dd/MM/yyyy")
+            Else
+                ngayCap = wsHV.Cells(i, 7).Value ' Cột 7
+            End If
+
+            Dim danToc As String: danToc = wsHV.Cells(i, 8).Value ' Cột 8
+            Dim tonGiao As String: tonGiao = wsHV.Cells(i, 9).Value ' Cột 9
+            Dim vanHoa As String: vanHoa = wsHV.Cells(i, 10).Value ' Cột 10
+            Dim doiTuong As String: doiTuong = wsHV.Cells(i, 11).Value ' Cột 11
+            Dim cuTru As String: cuTru = wsHV.Cells(i, 15).Value ' Cột 15
+            Dim viecLam As String: viecLam = wsHV.Cells(i, 16).Value ' Cột 16
+            Dim dienThoai As String: dienThoai = wsHV.Cells(i, 17).Value ' Cột 17
+
+            ' Replace data
+            ReplaceText wdDoc, "{{HOTEN}}", hoTen
+            ReplaceText wdDoc, "{{NGAYSINH}}", ngaySinh
+            ReplaceText wdDoc, "{{DANTOC}}", danToc
+            ReplaceText wdDoc, "{{TONGIAO}}", tonGiao
+            ReplaceText wdDoc, "{{SOCC}}", cccd
+            ReplaceText wdDoc, "{{NCCC}}", noiCap
+            ReplaceText wdDoc, "{{NGCC}}", ngayCap
+            ReplaceText wdDoc, "{{THUONGTRU}}", cuTru
+            ReplaceText wdDoc, "{{CUTRU}}", cuTru
+            ReplaceText wdDoc, "{{VANHOA}}", vanHoa
+            ReplaceText wdDoc, "{{DIENTHOAI}}", dienThoai
+            ReplaceText wdDoc, "{{DOITUONG}}", doiTuong
+            ReplaceText wdDoc, "{{TENNGHE}}", tenNghe
+            ReplaceText wdDoc, "{{THON}}", thon
+            ReplaceText wdDoc, "{{XA}}", xa
+            ReplaceText wdDoc, "{{TINH}}", tinh
+
+            ' Handle Gender
+            Dim nam As String, nu As String
+            nam = " ": nu = " "
+            If Trim(LCase(gioiTinh)) = "nam" Then nam = "x"
+            If Trim(LCase(gioiTinh)) = "nữ" Or Trim(LCase(gioiTinh)) = "nu" Then nu = "x"
+            ReplaceText wdDoc, "( Nam", "(" & nam & ") Nam"
+            ReplaceText wdDoc, "( Nữ", "(" & nu & ") Nữ"
+
+            ' Handle Employment
+            Dim vl1 As String, vl2 As String, vl3 As String, vl4 As String
+            vl1 = " ": vl2 = " ": vl3 = " ": vl4 = " "
+
+            If Trim(LCase(viecLam)) = LCase("Tự tạo việc làm") Then vl1 = "x"
+            If Trim(LCase(viecLam)) = LCase("Được doanh nghiệp, đơn vị bao tiêu sản phẩm") Then vl2 = "x"
+            If Trim(LCase(viecLam)) = LCase("Được doanh nghiệp, người sử dụng lao động ký hợp đồng lao động") Then vl3 = "x"
+            If Trim(LCase(viecLam)) = LCase("Đi làm việc có thời hạn ở nước ngoài") Then vl4 = "x"
+
+            ReplaceText wdDoc, "( Tự tạo việc làm", "(" & vl1 & ") Tự tạo việc làm"
+            ReplaceText wdDoc, "( Được doanh nghiệp, đơn vị bao  tiêu  sản  phẩm", "(" & vl2 & ") Được doanh nghiệp, đơn vị bao  tiêu  sản  phẩm"
+            ReplaceText wdDoc, "( Được doanh nghiệp, người sử dụng lao động ký hợp đồng lao  động", "(" & vl3 & ") Được doanh nghiệp, người sử dụng lao động ký hợp đồng lao  động"
+            ReplaceText wdDoc, "( Đi  làm việc có thời hạn ở nước ngoài", "(" & vl4 & ") Đi  làm việc có thời hạn ở nước ngoài"
+
+            ' Add to target document
+            wdDoc.Content.Copy
+            wdTargetDoc.Characters.Last.Paste
+
+            ' Add page break if it's not the last student
+            If i < lastRow And wsHV.Cells(i + 1, 2).Value <> "" Then
+                 wdTargetDoc.Characters.Last.InsertBreak Type:=7 ' wdPageBreak
+            End If
+
+            wdDoc.Close False ' Close without saving changes to template
+        End If
+    Next i
+
+    ' Save the combined document
+    If count > 0 Then
+        wdTargetDoc.SaveAs2 outputPath, 16 ' wdFormatDocumentDefault = 16
+        wdTargetDoc.Close False
+        MsgBox "Da tao xong " & count & " don xin hoc nghe! File duoc luu tai: " & outputPath, vbInformation
+    Else
+        wdTargetDoc.Close False
+        MsgBox "Khong co du lieu hoc vien!", vbExclamation
+    End If
+
+    ' Cleanup
+    wdApp.Quit
+    Set wdDoc = Nothing
+    Set wdTargetDoc = Nothing
+    Set wdApp = Nothing
+
+End Sub
+
+Private Sub ReplaceText(wdDoc As Object, findText As String, replaceText As String)
+    With wdDoc.Content.Find
+        .Text = findText
+        .Replacement.Text = IIf(IsNull(replaceText) Or replaceText = "", " ", replaceText)
+        .Forward = True
+        .Wrap = 1 ' wdFindContinue
+        .Format = False
+        .MatchCase = False
+        .MatchWholeWord = False
+        .MatchWildcards = False
+        .MatchSoundsLike = False
+        .MatchAllWordForms = False
+        .Execute Replace:=2 ' wdReplaceAll
+    End With
+End Sub
