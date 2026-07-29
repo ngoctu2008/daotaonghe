@@ -1,0 +1,166 @@
+HƯỚNG DẪN TẠO NÚT "TẠO ĐƠN HỌC NGHỀ & PHIẾU HỌC VIÊN" TRONG EXCEL
+
+Vì hệ thống không thể tự nhúng mã VBA (Macro) trên môi trường máy chủ Linux, bạn vui lòng thực hiện các bước sau trên máy tính Windows của bạn để nút bấm hoạt động tự động:
+
+BƯỚC 1: BẬT TAB DEVELOPER TRONG EXCEL
+1. Mở file "CSDL.xlsx" của bạn.
+2. Vào menu "File" -> "Options" -> "Customize Ribbon".
+3. Cột bên phải, đánh dấu tick vào ô "Developer". Nhấn OK.
+
+BƯỚC 2: CHÈN ĐOẠN MÃ VBA
+1. Trên thanh Ribbon, chọn tab "Developer" -> "Visual Basic" (hoặc nhấn Alt + F11).
+2. Trong cửa sổ mới, chọn menu "Insert" -> "Module".
+3. Copy toàn bộ đoạn mã VBA bên dưới và Paste vào phần giấy trắng bên phải.
+
+=== BẮT ĐẦU ĐOẠN MÃ VBA ===
+Sub TaoDonVaPhieuHocVien()
+    Dim wdApp As Object
+    Dim wdDocDon As Object, wdDocPhieu As Object
+    Dim wsThongTin As Worksheet, wsDiem As Worksheet, wsKhoaHoc As Worksheet
+    Dim lastRow As Long, i As Long
+    Dim hoTen As String, ngaySinh As String, cccd As String, nguyenQuan As String, noiCuTru As String
+    Dim danToc As String, tonGiao As String, trinhDo As String
+    Dim diemTong As String, xepLoai As String, tenNghe As String
+    Dim duongDanThuMuc As String
+
+    ' Khoi tao ung dung Word
+    On Error Resume Next
+    Set wdApp = GetObject(, "Word.Application")
+    If wdApp Is Nothing Then
+        Set wdApp = CreateObject("Word.Application")
+    End If
+    On Error GoTo 0
+    wdApp.Visible = True ' Hien thi Word de ban nhin thay qua trinh (co the de False de chay ngam)
+
+    ' Thiet lap thu muc luu cung cho voi file Excel
+    duongDanThuMuc = ThisWorkbook.Path & "\"
+
+    Set wsThongTin = ThisWorkbook.Sheets("Thông tin HV")
+    Set wsDiem = ThisWorkbook.Sheets("Điểm KH")
+    Set wsKhoaHoc = ThisWorkbook.Sheets("KHÓA HỌC")
+
+    ' Lay ten nghe dao tao
+    tenNghe = wsKhoaHoc.Range("D5").Value
+
+    lastRow = wsThongTin.Cells(wsThongTin.Rows.Count, "A").End(xlUp).Row
+
+    ' Mo 2 file mau (ban can dat 2 file nay trong cung thu muc voi file Excel)
+    Dim pathDonMau As String, pathPhieuMau As String
+    pathDonMau = duongDanThuMuc & "Don xin hoc nghe - Mau.docx"
+    pathPhieuMau = duongDanThuMuc & "Phieu hoc vien - Mau.docx"
+
+    If Dir(pathDonMau) = "" Or Dir(pathPhieuMau) = "" Then
+        MsgBox "Khong tim thay cac file mau (Don xin hoc nghe - Mau.docx hoac Phieu hoc vien - Mau.docx) trong cung thu muc!", vbCritical
+        Exit Sub
+    End If
+
+    ' Tao 2 file word moi de gop tat ca hoc vien
+    Dim docTongDon As Object, docTongPhieu As Object
+    Set docTongDon = wdApp.Documents.Add
+    Set docTongPhieu = wdApp.Documents.Add
+
+    ' Lap qua tung hoc vien (bat dau tu dong 4)
+    For i = 4 To lastRow
+        If wsThongTin.Range("C" & i).Value <> "" Then
+            ' 1. Lay thong tin
+            hoTen = wsThongTin.Range("C" & i).Value
+            ngaySinh = wsThongTin.Range("D" & i).Value
+            cccd = wsThongTin.Range("F" & i).Value
+            danToc = wsThongTin.Range("G" & i).Value
+            tonGiao = wsThongTin.Range("H" & i).Value
+            trinhDo = wsThongTin.Range("K" & i).Value
+            nguyenQuan = wsThongTin.Range("O" & i).Value
+            noiCuTru = wsThongTin.Range("P" & i).Value
+
+            ' Lay diem tu sheet Diem KH (cung dong i)
+            diemTong = wsDiem.Range("BH" & i).Value
+            xepLoai = wsDiem.Range("BI" & i).Value
+
+            ' Neu cac gia tri rong, gan cho chuoi rong de tranh loi
+            If IsError(ngaySinh) Then ngaySinh = ""
+            If cccd = "" Then cccd = "................................"
+            If danToc = "" Then danToc = "................"
+            If tonGiao = "" Then tonGiao = "Không"
+
+            ' ================================
+            ' XU LY DON XIN HOC NGHE
+            ' ================================
+            Set wdDocDon = wdApp.Documents.Open(pathDonMau)
+            Call ReplaceInWord(wdDocDon, "[HO_TEN]", hoTen)
+            Call ReplaceInWord(wdDocDon, "[NGAY_SINH]", ngaySinh)
+            Call ReplaceInWord(wdDocDon, "[DAN_TOC]", danToc)
+            Call ReplaceInWord(wdDocDon, "[TON_GIAO]", tonGiao)
+            Call ReplaceInWord(wdDocDon, "[SO_CCCD]", cccd)
+            Call ReplaceInWord(wdDocDon, "[HKTT]", noiCuTru)
+            Call ReplaceInWord(wdDocDon, "[CHO_O]", noiCuTru)
+            Call ReplaceInWord(wdDocDon, "[TRINH_DO]", trinhDo)
+            Call ReplaceInWord(wdDocDon, "[TEN_NGHE]", tenNghe)
+            Call ReplaceInWord(wdDocDon, "[DIEN_THOAI]", "....................")
+
+            ' Copy toan bo noi dung va dan vao file Tong, roi ngat trang
+            wdDocDon.Content.Copy
+            docTongDon.Range.InsertBreak Type:=7 ' wdPageBreak
+            docTongDon.Characters.Last.Paste
+            wdDocDon.Close SaveChanges:=False
+
+            ' ================================
+            ' XU LY PHIEU HỌC VIÊN
+            ' ================================
+            Set wdDocPhieu = wdApp.Documents.Open(pathPhieuMau)
+            Call ReplaceInWord(wdDocPhieu, "[HO_TEN]", hoTen)
+            Call ReplaceInWord(wdDocPhieu, "[NGAY_SINH]", ngaySinh)
+            Call ReplaceInWord(wdDocPhieu, "[SO_CCCD]", cccd)
+            Call ReplaceInWord(wdDocPhieu, "[QUE_QUAN]", nguyenQuan)
+            Call ReplaceInWord(wdDocPhieu, "[HKTT]", noiCuTru)
+            Call ReplaceInWord(wdDocPhieu, "[DAN_TOC]", danToc)
+            Call ReplaceInWord(wdDocPhieu, "[TON_GIAO]", tonGiao)
+            Call ReplaceInWord(wdDocPhieu, "[CHO_O]", noiCuTru)
+            Call ReplaceInWord(wdDocPhieu, "[TRINH_DO]", trinhDo)
+            Call ReplaceInWord(wdDocPhieu, "[TEN_NGHE]", tenNghe)
+            Call ReplaceInWord(wdDocPhieu, "[DIEM_TONG]", diemTong)
+            Call ReplaceInWord(wdDocPhieu, "[XEP_LOAI]", xepLoai)
+            Call ReplaceInWord(wdDocPhieu, "[DIEN_THOAI]", "....................")
+
+            ' Copy toan bo noi dung va dan vao file Tong
+            wdDocPhieu.Content.Copy
+            docTongPhieu.Range.InsertBreak Type:=7 ' wdPageBreak
+            docTongPhieu.Characters.Last.Paste
+            wdDocPhieu.Close SaveChanges:=False
+        End If
+    Next i
+
+    ' Luu cac file tong
+    docTongDon.SaveAs2 duongDanThuMuc & "DanhSach_DonXinHocNghe.docx"
+    docTongPhieu.SaveAs2 duongDanThuMuc & "DanhSach_PhieuHocVien.docx"
+
+    docTongDon.Close SaveChanges:=True
+    docTongPhieu.Close SaveChanges:=True
+
+    wdApp.Quit
+    Set wdApp = Nothing
+
+    MsgBox "Da hoan tat tao Đơn và Phiếu cho tat ca hoc vien! Cac file tong da duoc luu cung thu muc.", vbInformation
+End Sub
+
+' Ham ho tro tim va thay the chuoi trong Word
+Sub ReplaceInWord(doc As Object, findText As String, replaceText As String)
+    With doc.Content.Find
+        .Text = findText
+        .Replacement.Text = replaceText
+        .Wrap = 1 ' wdFindContinue
+        .Execute Replace:=2 ' wdReplaceAll
+    End With
+End Sub
+=== KẾT THÚC ĐOẠN MÃ VBA ===
+
+4. Sau khi dán mã xong, bấm biểu tượng "Save" trong cửa sổ VBA (Khi lưu có thể nó hỏi lưu định dạng không chứa Macro, hãy chọn "No" và lưu lại file thành dạng "Excel Macro-Enabled Workbook (*.xlsm)" để giữ lại mã VBA này cho các lần sau).
+5. Đóng cửa sổ Visual Basic lại.
+
+BƯỚC 3: TẠO NÚT BẤM TRONG EXCEL
+1. Quay lại file Excel, vào tab "Developer".
+2. Nhấn "Insert", dưới mục Form Controls, chọn biểu tượng đầu tiên là "Button (Form Control)".
+3. Vẽ một nút bấm trên sheet "Thông tin HV" (hoặc sheet "CSDL").
+4. Một hộp thoại "Assign Macro" sẽ hiện ra. Bạn chọn tên Macro là "TaoDonVaPhieuHocVien" và nhấn OK.
+5. Sửa tên nút thành "Tạo Đơn & Phiếu Học Viên".
+
+Xong! Giờ mỗi khi bạn nhấp vào nút này, mã sẽ tự động lấy danh sách học viên, điền vào 2 mẫu Word (nhớ để 2 file mẫu ".docx" mình gửi cùng chung một thư mục với file Excel) và xuất ra 2 file Word Tổng hợp.
