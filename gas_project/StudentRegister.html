@@ -23,6 +23,15 @@
   </head>
   <body>
     <div class="register-container">
+      <div style="display: flex; align-items: center; padding: 20px; background-color: white; border-bottom: 2px solid #3f6ad8;">
+        <? if (logoUrl) { ?>
+          <img src="<?= logoUrl ?>" alt="Logo" style="height: 80px; margin-right: 20px;">
+        <? } ?>
+        <div>
+          <h4 style="margin: 0; color: #3f6ad8; font-weight: bold;">TRUNG TÂM GDNN – GDTX KHU VỰC ĐĂK HÀ</h4>
+          <h3 style="margin: 5px 0 0 0; color: #3f6ad8; font-weight: bold;">HỆ THỐNG QUẢN LÝ ĐÀO TẠO NGHỀ</h3>
+        </div>
+      </div>
       <div class="form-header">
         <h4>ĐĂNG KÝ HỌC NGHỀ</h4>
         <p class="mb-0 mt-2 text-light" style="opacity: 0.9;">Mã lớp học: <strong><?= courseId ?></strong></p>
@@ -141,6 +150,10 @@
           <p class="small text-muted">Bạn có thể đóng trang này.</p>
         </div>
 
+      </div>
+
+      <div style="text-align: center; padding: 15px; color: #6c757d; font-size: 0.85rem; border-top: 1px solid #dee2e6; background-color: #f8f9fa;">
+          Thiết kế và vận hành bởi: Phạm Ngọc Tú - Mọi chi tiết xin liên hệ email: ngoctu.dnkd@gmail.com
       </div>
     </div>
 

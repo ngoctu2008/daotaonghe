@@ -37,7 +37,13 @@
          ============================================== -->
     <div id="loginPage">
       <div class="login-container">
-        <h3 class="text-center mb-4">Hệ thống QL Đào tạo Nghề</h3>
+        <div class="text-center mb-4">
+          <? if (logoUrl) { ?>
+            <img src="<?= logoUrl ?>" alt="Logo" style="height: 80px; margin-bottom: 15px;">
+          <? } ?>
+          <h5 style="color: #3f6ad8; font-weight: bold; margin-bottom: 5px;">TRUNG TÂM GDNN – GDTX KHU VỰC ĐĂK HÀ</h5>
+          <h4 style="color: #3f6ad8; font-weight: bold;">HỆ THỐNG QUẢN LÝ ĐÀO TẠO NGHỀ</h4>
+        </div>
         <div id="loginAlert" class="alert alert-danger hidden" role="alert"></div>
         <div class="mb-3">
           <label for="username" class="form-label">Tên đăng nhập</label>
@@ -55,10 +61,11 @@
          M A I N   A P P
          ============================================== -->
     <div id="sidebar" class="hidden">
-      <div class="brand">Quản lý Đào tạo</div>
+      <div class="brand" style="font-size: 16px; padding: 20px 10px;">HỆ THỐNG QUẢN LÝ ĐÀO TẠO NGHỀ<br><span style="font-size: 12px; font-weight: normal; color: #6c757d;">TT GDNN - GDTX ĐĂK HÀ</span></div>
       <nav class="nav flex-column">
         <a class="nav-link active" onclick="switchTab('tab-courses')" id="nav-courses"><i class="bi bi-journal-text me-2"></i> Khóa học</a>
-        <a class="nav-link hidden" onclick="switchTab('tab-accounts')" id="nav-accounts"><i class="bi bi-people me-2"></i> Quản lý Tài khoản</a>
+        <a class="nav-link hidden" onclick="switchTab('tab-categories')" id="nav-categories"><i class="bi bi-tags me-2"></i> Danh mục</a>
+        <a class="nav-link hidden" onclick="switchTab('tab-accounts')" id="nav-accounts"><i class="bi bi-people me-2"></i> Tài khoản</a>
         <a class="nav-link hidden" onclick="switchTab('tab-config')" id="nav-config"><i class="bi bi-gear me-2"></i> Cấu hình</a>
         <a class="nav-link" onclick="switchTab('tab-profile')" id="nav-profile"><i class="bi bi-person-badge me-2"></i> Đổi mật khẩu</a>
         <a class="nav-link text-danger mt-auto" onclick="logout()"><i class="bi bi-box-arrow-left me-2"></i> Đăng xuất</a>
@@ -182,6 +189,39 @@
         </div>
       </div>
 
+
+      <!-- TAB: QUẢN LÝ DANH MỤC (Admin / GiaoVu) -->
+      <div id="tab-categories" class="tab-pane hidden">
+        <div class="row">
+          <div class="col-md-6">
+            <div class="card shadow-sm">
+              <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Nghề Đào Tạo</span>
+                <button class="btn btn-sm btn-primary" onclick="addCategory('DanhSachNghe')"><i class="bi bi-plus"></i> Thêm</button>
+              </div>
+              <div class="card-body p-0">
+                <table class="table table-sm table-hover mb-0" id="tbl-DanhSachNghe">
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="card shadow-sm">
+              <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Đối Tượng Học Viên</span>
+                <button class="btn btn-sm btn-primary" onclick="addCategory('DoiTuong')"><i class="bi bi-plus"></i> Thêm</button>
+              </div>
+              <div class="card-body p-0">
+                <table class="table table-sm table-hover mb-0" id="tbl-DoiTuong">
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- TAB: CẤU HÌNH (Admin) -->
       <div id="tab-config" class="tab-pane hidden">
         <div class="card shadow-sm" style="max-width: 600px;">
@@ -199,6 +239,10 @@
             <div class="mb-3">
               <label class="form-label small fw-bold">ID Thư mục xuất file (Export Folder)</label>
               <input type="text" id="cfg_export" class="form-control form-control-sm">
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-bold">Năm Đào Tạo mặc định</label>
+              <input type="number" id="cfg_nam" class="form-control form-control-sm" placeholder="VD: 2024">
             </div>
             <button class="btn btn-sm btn-primary" onclick="saveConfigData()">Lưu Cấu hình</button>
           </div>
@@ -265,22 +309,34 @@
                       <div class="col-md-3"><label class="small">Đối tượng</label><select id="s_doituong" class="form-select form-select-sm"><option value="Bình thường">Bình thường</option></select></div>
                     </div>
 
-                    <h6 class="small fw-bold text-muted mt-3 border-bottom pb-1">Địa chỉ & Khác</h6>
-                    <div class="row g-2">
-                      <div class="col-md-6"><label class="small">Thường trú</label><input type="text" id="s_thuongtru" class="form-control form-control-sm"></div>
-                      <div class="col-md-6"><label class="small">Tạm trú</label><input type="text" id="s_tamtru" class="form-control form-control-sm"></div>
-                      <div class="col-md-4"><label class="small">Quê quán</label><input type="text" id="s_quequan" class="form-control form-control-sm"></div>
-                      <div class="col-md-4"><label class="small">Nơi sinh</label><input type="text" id="s_noisinh" class="form-control form-control-sm"></div>
-                      <div class="col-md-4"><label class="small">Email</label><input type="text" id="s_email" class="form-control form-control-sm"></div>
+<div class="row g-2 mt-1">
+                      <div class="col-md-3"><label class="small">Trình độ</label><input type="text" id="s_trinhdo" class="form-control form-control-sm"></div>
+                      <div class="col-md-3"><label class="small">Trình độ văn hóa</label><input type="text" id="s_trinhdovanhoa" class="form-control form-control-sm"></div>
+                      <div class="col-md-3"><label class="small">Ngày cấp CCCD</label><input type="date" id="s_ngaycap" class="form-control form-control-sm"></div>
+                      <div class="col-md-3"><label class="small">Nơi cấp CCCD</label><input type="text" id="s_noicap" class="form-control form-control-sm"></div>
                     </div>
-
+                    <div class="row g-2 mt-1">
+                      <div class="col-md-3"><label class="small">Email</label><input type="email" id="s_email" class="form-control form-control-sm"></div>
+                      <div class="col-md-3"><label class="small">Thường trú</label><input type="text" id="s_thuongtru" class="form-control form-control-sm"></div>
+                      <div class="col-md-3"><label class="small">Tạm trú</label><input type="text" id="s_tamtru" class="form-control form-control-sm"></div>
+                      <div class="col-md-3"><label class="small">Quê quán</label><input type="text" id="s_quequan" class="form-control form-control-sm"></div>
+                    </div>
+                    <div class="row g-2 mt-1">
+                      <div class="col-md-3"><label class="small">Nơi sinh</label><input type="text" id="s_noisinh" class="form-control form-control-sm"></div>
+                      <div class="col-md-3"><label class="small">Huyện thường trú</label><input type="text" id="s_huyenthuongtru" class="form-control form-control-sm"></div>
+                      <div class="col-md-3"><label class="small">Xã thường trú</label><input type="text" id="s_xathuongtru" class="form-control form-control-sm"></div>
+                      <div class="col-md-3"><label class="small">Thôn thường trú</label><input type="text" id="s_thonthuongtru" class="form-control form-control-sm"></div>
+                    </div>
                     <h6 class="small fw-bold text-muted mt-3 border-bottom pb-1">Gia đình</h6>
                     <div class="row g-2">
-                      <div class="col-md-6"><label class="small">Họ tên Cha</label><input type="text" id="s_tencha" class="form-control form-control-sm"></div>
-                      <div class="col-md-6"><label class="small">Nghề Cha</label><input type="text" id="s_nghecha" class="form-control form-control-sm"></div>
-                      <div class="col-md-6"><label class="small">Họ tên Mẹ</label><input type="text" id="s_tenme" class="form-control form-control-sm"></div>
-                      <div class="col-md-6"><label class="small">Nghề Mẹ</label><input type="text" id="s_ngheme" class="form-control form-control-sm"></div>
+                      <div class="col-md-3"><label class="small">Tên Cha</label><input type="text" id="s_tencha" class="form-control form-control-sm"></div>
+                      <div class="col-md-3"><label class="small">Nghề Cha</label><input type="text" id="s_nghecha" class="form-control form-control-sm"></div>
+                      <div class="col-md-3"><label class="small">Tên Mẹ</label><input type="text" id="s_tenme" class="form-control form-control-sm"></div>
+                      <div class="col-md-3"><label class="small">Nghề Mẹ</label><input type="text" id="s_ngheme" class="form-control form-control-sm"></div>
+                      <div class="col-md-3"><label class="small">Tên Vợ/Chồng</label><input type="text" id="s_tenvochong" class="form-control form-control-sm"></div>
+                      <div class="col-md-3"><label class="small">Nghề Vợ/Chồng</label><input type="text" id="s_nghevochong" class="form-control form-control-sm"></div>
                     </div>
+
                   </div>
                   <div class="card-footer bg-light text-end py-2">
                     <span id="s_msg" class="me-3 small text-primary"></span>
@@ -288,6 +344,10 @@
                     <button class="btn btn-sm btn-success" onclick="saveStudent()">Lưu thông tin</button>
                   </div>
                 </div>
+
+        <div style="margin-bottom: 20px;">
+            <img src="https://i.imgur.com/gO0tG2F.png" alt="Header Banner" style="width: 100%; height: auto; border-radius: 5px; box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);">
+        </div>
 
               </div>
 
@@ -314,6 +374,11 @@
         </div>
       </div>
     </div>
+
+        <div style="text-align: center; padding: 20px; color: #6c757d; font-size: 0.9rem; margin-top: 40px; border-top: 1px solid #dee2e6;">
+            Thiết kế và vận hành bởi: Phạm Ngọc Tú - Mọi chi tiết xin liên hệ email: ngoctu.dnkd@gmail.com
+        </div>
+      </div> <!-- End content-area -->
 
     <!-- Scripts -->
 
@@ -385,15 +450,31 @@
           document.getElementById('btnAddStudent').classList.add('hidden'); // Admin/Giáo vụ chỉ xem
         }
 
-        if (currentUser.role === 'Admin') {
+        if (currentUser.role === 'Admin' || currentUser.role === 'GiaoVu') {
+          document.getElementById('nav-categories').classList.remove('hidden');
           document.getElementById('nav-accounts').classList.remove('hidden');
-          document.getElementById('nav-config').classList.remove('hidden');
           loadAccounts();
+          loadCategories('DanhSachNghe');
+          loadCategories('DoiTuong');
+        } else {
+          document.getElementById('nav-categories').classList.add('hidden');
+          document.getElementById('nav-accounts').classList.add('hidden');
+        }
+
+        if (currentUser.role === 'Admin') {
+          document.getElementById('nav-config').classList.remove('hidden');
           loadConfig();
         } else {
-          document.getElementById('nav-accounts').classList.add('hidden');
           document.getElementById('nav-config').classList.add('hidden');
         }
+
+
+        // Load config for all users (Teachers need namHienTai)
+        google.script.run.withSuccessHandler(config => {
+            if(config.namHienTai && document.getElementById('c_nam')) {
+                document.getElementById('c_nam').value = config.namHienTai;
+            }
+        }).getConfig(currentUser);
 
         courseModalInstance = new bootstrap.Modal(document.getElementById('courseModal'));
         loadCourses();
@@ -484,7 +565,7 @@
 
       function approveCourse(rowIndex) {
         if(!confirm("Bạn chắc chắn duyệt lớp học này?")) return;
-        google.script.run.withSuccessHandler(res => { loadCourses(); }).approveCourse(rowIndex);
+        google.script.run.withSuccessHandler(res => { loadCourses(); }).approveCourse(rowIndex, currentUser);
       }
 
       // --- HỌC VIÊN ---
@@ -565,6 +646,15 @@
         document.getElementById('s_nghecha').value = s.ngheCha || "";
         document.getElementById('s_tenme').value = s.tenMe || "";
         document.getElementById('s_ngheme').value = s.ngheMe || "";
+        document.getElementById('s_trinhdo').value = s.trinhDo || "";
+        document.getElementById('s_trinhdovanhoa').value = s.trinhDoVanHoa || "";
+        if(s.ngayCap) document.getElementById('s_ngaycap').value = new Date(s.ngayCap).toISOString().split('T')[0];
+        document.getElementById('s_noicap').value = s.noiCap || "";
+        document.getElementById('s_tenvochong').value = s.tenVoChong || "";
+        document.getElementById('s_nghevochong').value = s.ngheVoChong || "";
+        document.getElementById('s_huyenthuongtru').value = s.huyenThuongTru || "";
+        document.getElementById('s_xathuongtru').value = s.xaThuongTru || "";
+        document.getElementById('s_thonthuongtru').value = s.thonThuongTru || "";
       }
 
       function closeStudentForm() { document.getElementById('studentFormArea').classList.add('hidden'); }
@@ -580,22 +670,31 @@
           thuongTru: document.getElementById('s_thuongtru').value, tamTru: document.getElementById('s_tamtru').value,
           queQuan: document.getElementById('s_quequan').value, noiSinh: document.getElementById('s_noisinh').value,
           tenCha: document.getElementById('s_tencha').value, ngheCha: document.getElementById('s_nghecha').value,
-          tenMe: document.getElementById('s_tenme').value, ngheMe: document.getElementById('s_ngheme').value
+          tenMe: document.getElementById('s_tenme').value, ngheMe: document.getElementById('s_ngheme').value,
+          trinhDo: document.getElementById('s_trinhdo').value,
+          trinhDoVanHoa: document.getElementById('s_trinhdovanhoa').value,
+          ngayCap: document.getElementById('s_ngaycap').value,
+          noiCap: document.getElementById('s_noicap').value,
+          tenVoChong: document.getElementById('s_tenvochong').value,
+          ngheVoChong: document.getElementById('s_nghevochong').value,
+          huyenThuongTru: document.getElementById('s_huyenthuongtru').value,
+          xaThuongTru: document.getElementById('s_xathuongtru').value,
+          thonThuongTru: document.getElementById('s_thonthuongtru').value
         };
         if(!data.fullName || !data.dob || !data.cccd) return alert("Nhập đủ Họ tên, Ngày sinh, CCCD!");
 
         let msg = document.getElementById('s_msg'); msg.innerText = "Đang lưu...";
 
         if (rowIndex) {
-          google.script.run.withSuccessHandler(res => { loadStudents(); closeStudentForm(); }).updateStudent(rowIndex, data);
+          google.script.run.withSuccessHandler(res => { loadStudents(); closeStudentForm(); }).updateStudent(rowIndex, data, currentUser);
         } else {
-          google.script.run.withSuccessHandler(res => { loadStudents(); closeStudentForm(); }).addStudentManual(data);
+          google.script.run.withSuccessHandler(res => { loadStudents(); closeStudentForm(); }).addStudentManual(data, currentUser);
         }
       }
 
       function deleteStudent(rowIndex) {
         if(!confirm("Bạn chắc chắn muốn xóa học viên này?")) return;
-        google.script.run.withSuccessHandler(res => { loadStudents(); }).deleteStudent(rowIndex);
+        google.script.run.withSuccessHandler(res => { loadStudents(); }).deleteStudent(rowIndex, currentUser);
       }
 
       // --- QR & XUẤT ---
@@ -614,7 +713,7 @@
         google.script.run.withSuccessHandler(res => {
           if (res.success) document.getElementById('exportStatus').innerHTML = `<a href="${res.url}" target="_blank">✔ ${res.message} - Bấm để tải</a>`;
           else document.getElementById('exportStatus').innerHTML = `<span class="text-danger">${res.message}</span>`;
-        }).generateDocument(docType, currentCourseId);
+        }).generateDocument(docType, currentCourseId, currentUser);
       }
       // --- ADMIN LOGIC ---
       function loadAccounts() {
@@ -646,7 +745,7 @@
         document.getElementById('accountFormArea').classList.remove('hidden');
         document.getElementById('accountFormTitle').innerText = "Sửa Tài khoản";
         document.getElementById('aRowIndex').value = a.rowIndex;
-        document.getElementById('a_user').value = a.username; document.getElementById('a_pass').value = a.password;
+        document.getElementById('a_user').value = a.username; document.getElementById('a_pass').value = a.password || "";
         document.getElementById('a_role').value = a.role; document.getElementById('a_name').value = a.name;
       }
 
@@ -671,6 +770,7 @@
           document.getElementById('cfg_donxinhoc').value = config.donXinHoc || "";
           document.getElementById('cfg_danhsachlop').value = config.danhSachLop || "";
           document.getElementById('cfg_export').value = config.exportFolder || "";
+          document.getElementById('cfg_nam').value = config.namHienTai || "";
         }).getConfig(currentUser);
       }
 
@@ -678,7 +778,8 @@
         let data = {
           donXinHoc: document.getElementById('cfg_donxinhoc').value.trim(),
           danhSachLop: document.getElementById('cfg_danhsachlop').value.trim(),
-          exportFolder: document.getElementById('cfg_export').value.trim()
+          exportFolder: document.getElementById('cfg_export').value.trim(),
+          namHienTai: document.getElementById('cfg_nam').value.trim()
         };
         let alertBox = document.getElementById('cfgAlert'); alertBox.className = "alert alert-info py-2 small"; alertBox.innerText = "Đang lưu...";
         google.script.run.withSuccessHandler(res => {
@@ -686,6 +787,61 @@
           alertBox.innerText = res.message;
         }).saveConfig(data, currentUser);
       }
+
+      // --- CATEGORIES LOGIC ---
+
+      function loadCategories(sheetName) {
+        let tbody = document.querySelector(`#tbl-${sheetName} tbody`);
+        if(!tbody) return;
+        tbody.innerHTML = '<tr><td class="text-center small">Đang tải...</td></tr>';
+
+        google.script.run.withSuccessHandler(items => {
+          tbody.innerHTML = '';
+          if (items.length === 0) return tbody.innerHTML = '<tr><td class="text-center small text-muted">Chưa có dữ liệu.</td></tr>';
+
+          items.forEach(item => {
+            let tr = document.createElement('tr');
+            let actions = `<button class="btn btn-sm btn-link py-0 px-1" onclick="editCategory('${sheetName}', ${item.rowIndex}, '${escapeHtml(item.value).replace(/'/g, "\\'")}')"><i class="bi bi-pencil"></i></button>
+                           <button class="btn btn-sm btn-link text-danger py-0 px-1" onclick="deleteCategory('${sheetName}', ${item.rowIndex})"><i class="bi bi-trash"></i></button>`;
+            tr.innerHTML = `<td class="ps-3 align-middle">${escapeHtml(item.value)}</td><td class="text-end pe-2" style="width: 80px;">${actions}</td>`;
+            tbody.appendChild(tr);
+          });
+        }).getCategoryData(sheetName, currentUser);
+
+        // Load sheet còn lại nếu đang load DanhSachNghe
+        if (sheetName === 'DanhSachNghe') loadCategories('DoiTuong');
+      }
+
+      function addCategory(sheetName) {
+        let title = sheetName === 'DanhSachNghe' ? "Nghề Đào Tạo" : "Đối Tượng";
+        let val = prompt(`Nhập tên ${title} mới:`);
+        if(!val || !val.trim()) return;
+
+        google.script.run.withSuccessHandler(res => {
+           if(res.success) loadCategories(sheetName);
+           else alert(res.message);
+        }).addCategoryItem(sheetName, val, currentUser);
+      }
+
+      function editCategory(sheetName, rowIndex, oldVal) {
+        let title = sheetName === 'DanhSachNghe' ? "Nghề Đào Tạo" : "Đối Tượng";
+        let val = prompt(`Sửa tên ${title}:`, oldVal);
+        if(!val || !val.trim() || val === oldVal) return;
+
+        google.script.run.withSuccessHandler(res => {
+           if(res.success) loadCategories(sheetName);
+           else alert(res.message);
+        }).updateCategoryItem(sheetName, rowIndex, val, currentUser);
+      }
+
+      function deleteCategory(sheetName, rowIndex) {
+        if(!confirm("Bạn chắc chắn muốn xóa mục này?")) return;
+        google.script.run.withSuccessHandler(res => {
+           if(res.success) loadCategories(sheetName);
+           else alert(res.message);
+        }).deleteCategoryItem(sheetName, rowIndex, currentUser);
+      }
+
     </script>
   </body>
 </html>

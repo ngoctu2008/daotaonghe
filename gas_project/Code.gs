@@ -27,22 +27,40 @@ function setupPermissions() {
 /**
  * Xử lý HTTP GET Request (khi người dùng truy cập Web App)
  */
+function getLogoUrl() {
+  try {
+    var files = DriveApp.getFilesByName('logo.png');
+    if (files.hasNext()) {
+      var file = files.next();
+      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+      return "https://drive.google.com/uc?export=view&id=" + file.getId();
+    }
+  } catch (e) {
+    // Ignore permissions/search errors
+  }
+  return ""; // Fallback
+}
+
 function doGet(e) {
   var page = e.parameter.page;
   var courseId = e.parameter.courseId;
+  var logoUrl = getLogoUrl();
 
   if (page == 'register' && courseId) {
     var template = HtmlService.createTemplateFromFile('StudentRegister');
     template.courseId = courseId;
     // Lấy danh sách đối tượng truyền vào trang đăng ký
     template.doiTuongList = getDoiTuong();
+    template.logoUrl = logoUrl;
     return template.evaluate()
         .setTitle('Đăng ký khóa học')
         .addMetaTag('viewport', 'width=device-width, initial-scale=1');
   }
 
   // Trang đăng nhập hoặc quản lý
-  return HtmlService.createHtmlOutputFromFile('Index')
+  var template = HtmlService.createTemplateFromFile('Index');
+  template.logoUrl = logoUrl;
+  return template.evaluate()
       .setTitle('Hệ thống Quản lý Đào tạo Nghề')
       .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
@@ -80,9 +98,76 @@ function getDoiTuong() {
   return list;
 }
 
+
+
+/* =======================================================================
+ * QUẢN LÝ DANH MỤC (CATEGORIES CRUD)
+ * ======================================================================= */
+
+function getCategoryData(sheetName, credentials) {
+  var userInfo = verifySession(credentials); if (!userInfo || (userInfo.role !== 'Admin' && userInfo.role !== 'GiaoVu')) return [];
+  var sheet = getDbSpreadsheet().getSheetByName(sheetName);
+  if (!sheet) return [];
+  var data = sheet.getDataRange().getValues();
+  var items = [];
+  for (var i = 1; i < data.length; i++) {
+    if (data[i][0]) items.push({ value: data[i][0].toString().trim(), rowIndex: i + 1 });
+  }
+  return items;
+}
+
+function addCategoryItem(sheetName, itemValue, credentials) {
+  var userInfo = verifySession(credentials); if (!userInfo || (userInfo.role !== 'Admin' && userInfo.role !== 'GiaoVu')) return { success: false, message: "Không có quyền!" };
+  if (!itemValue || itemValue.trim() === "") return { success: false, message: "Dữ liệu trống!" };
+  var sheet = getDbSpreadsheet().getSheetByName(sheetName);
+  if (!sheet) return { success: false, message: "Không tìm thấy Sheet " + sheetName };
+
+  sheet.appendRow([itemValue.trim()]);
+  return { success: true, message: "Đã thêm thành công!" };
+}
+
+function updateCategoryItem(sheetName, rowIndex, newItemValue, credentials) {
+  var userInfo = verifySession(credentials); if (!userInfo || (userInfo.role !== 'Admin' && userInfo.role !== 'GiaoVu')) return { success: false, message: "Không có quyền!" };
+  if (!newItemValue || newItemValue.trim() === "") return { success: false, message: "Dữ liệu trống!" };
+  var sheet = getDbSpreadsheet().getSheetByName(sheetName);
+  if (!sheet) return { success: false, message: "Không tìm thấy Sheet " + sheetName };
+
+  sheet.getRange(rowIndex, 1).setValue(newItemValue.trim());
+  return { success: true, message: "Đã cập nhật thành công!" };
+}
+
+function deleteCategoryItem(sheetName, rowIndex, credentials) {
+  var userInfo = verifySession(credentials); if (!userInfo || (userInfo.role !== 'Admin' && userInfo.role !== 'GiaoVu')) return { success: false, message: "Không có quyền!" };
+  if (rowIndex <= 1) return { success: false, message: "Không thể xóa dòng tiêu đề!" };
+  var sheet = getDbSpreadsheet().getSheetByName(sheetName);
+  if (!sheet) return { success: false, message: "Không tìm thấy Sheet " + sheetName };
+
+  sheet.deleteRow(rowIndex);
+  return { success: true, message: "Đã xóa thành công!" };
+}
+
+
 /* =======================================================================
  * XỬ LÝ XÁC THỰC, PHÂN QUYỀN VÀ TÀI KHOẢN
  * ======================================================================= */
+
+function verifySession(credentials) {
+  if (!credentials || !credentials.username || !credentials.password) return null;
+  var sheet = getDbSpreadsheet().getSheetByName("TaiKhoan");
+  if (!sheet) return null;
+  var data = sheet.getDataRange().getValues();
+  for (var i = 1; i < data.length; i++) {
+    var u = data[i][0] != null ? data[i][0].toString().trim() : "";
+    var p = data[i][1] != null ? data[i][1].toString().trim() : "";
+    var role = data[i][2];
+    var name = data[i][3];
+    if (u === credentials.username.trim() && p === credentials.password.trim()) {
+      return { username: u, role: role, name: name, rowIndex: i + 1 };
+    }
+  }
+  return null;
+}
+
 
 function loginUser(username, password) {
   var sheet = getDbSpreadsheet().getSheetByName("TaiKhoan");
@@ -117,8 +202,8 @@ function changePassword(userInfo, oldPassword, newPassword) {
   sheet.getRange(row, 2).setValue(newPassword.trim());
   return { success: true, message: "Đổi mật khẩu thành công!" };
 }
-function adminChangeUserPassword(targetRowIndex, newPassword, userInfo) {
-  if (userInfo.role !== 'Admin' && userInfo.role !== 'GiaoVu') return { success: false, message: "Không có quyền!" };
+function adminChangeUserPassword(targetRowIndex, newPassword, credentials) {
+  var userInfo = verifySession(credentials); if (!userInfo || (userInfo.role !== 'Admin' && userInfo.role !== 'GiaoVu')) return { success: false, message: "Không có quyền!" };
   var sheet = getDbSpreadsheet().getSheetByName("TaiKhoan");
 
   if (userInfo.role === 'GiaoVu') {
@@ -139,15 +224,16 @@ function adminChangeUserPassword(targetRowIndex, newPassword, userInfo) {
  * QUẢN TRỊ VIÊN: TÀI KHOẢN & CẤU HÌNH
  * ======================================================================= */
 
-function getAccounts(userInfo) {
-  if (userInfo.role !== 'Admin' && userInfo.role !== 'GiaoVu') return [];
+function getAccounts(credentials) {
+  var userInfo = verifySession(credentials);
+  if (!userInfo || (userInfo.role !== 'Admin' && userInfo.role !== 'GiaoVu')) return [];
   var sheet = getDbSpreadsheet().getSheetByName("TaiKhoan");
   var data = sheet.getDataRange().getValues();
   var accounts = [];
   for (var i = 1; i < data.length; i++) {
+    // Không trả về password
     accounts.push({
       username: data[i][0] ? data[i][0].toString().trim() : "",
-      password: data[i][1] ? data[i][1].toString().trim() : "",
       role: data[i][2],
       name: data[i][3],
       rowIndex: i + 1
@@ -159,28 +245,34 @@ function getAccounts(userInfo) {
   return accounts;
 }
 
-function addAccount(accData, userInfo) {
-  if (userInfo.role !== 'Admin' && userInfo.role !== 'GiaoVu') return { success: false, message: "Không có quyền!" };
+function addAccount(accData, credentials) {
+  var userInfo = verifySession(credentials); if (!userInfo || (userInfo.role !== 'Admin' && userInfo.role !== 'GiaoVu')) return { success: false, message: "Không có quyền!" };
   if (userInfo.role === 'GiaoVu' && accData.role !== 'GiaoVien') return { success: false, message: "Giáo vụ chỉ được tạo tài khoản Giáo Viên!" };
   var sheet = getDbSpreadsheet().getSheetByName("TaiKhoan");
   sheet.appendRow([accData.username.trim(), accData.password.trim(), accData.role, accData.name]);
   return { success: true, message: "Đã thêm tài khoản!" };
 }
 
-function updateAccount(rowIndex, accData, userInfo) {
-  if (userInfo.role !== 'Admin' && userInfo.role !== 'GiaoVu') return { success: false, message: "Không có quyền!" };
+function updateAccount(rowIndex, accData, credentials) {
+  var userInfo = verifySession(credentials); if (!userInfo || (userInfo.role !== 'Admin' && userInfo.role !== 'GiaoVu')) return { success: false, message: "Không có quyền!" };
   var sheet = getDbSpreadsheet().getSheetByName("TaiKhoan");
   if (userInfo.role === 'GiaoVu') {
     if (accData.role !== 'GiaoVien') return { success: false, message: "Giáo vụ chỉ được phép gán quyền Giáo Viên!" };
     var existingRole = sheet.getRange(rowIndex, 3).getValue();
     if (existingRole !== 'GiaoVien') return { success: false, message: "Giáo vụ không được phép sửa tài khoản của cấp bậc cao hơn!" };
   }
-  sheet.getRange(rowIndex, 1, 1, 4).setValues([[accData.username.trim(), accData.password.trim(), accData.role, accData.name]]);
+
+  if (accData.password && accData.password.trim() !== "") {
+    sheet.getRange(rowIndex, 1, 1, 4).setValues([[accData.username.trim(), accData.password.trim(), accData.role, accData.name]]);
+  } else {
+    var oldPass = sheet.getRange(rowIndex, 2).getValue();
+    sheet.getRange(rowIndex, 1, 1, 4).setValues([[accData.username.trim(), oldPass, accData.role, accData.name]]);
+  }
   return { success: true, message: "Đã cập nhật tài khoản!" };
 }
 
-function deleteAccount(rowIndex, userInfo) {
-  if (userInfo.role !== 'Admin' && userInfo.role !== 'GiaoVu') return { success: false, message: "Không có quyền!" };
+function deleteAccount(rowIndex, credentials) {
+  var userInfo = verifySession(credentials); if (!userInfo || (userInfo.role !== 'Admin' && userInfo.role !== 'GiaoVu')) return { success: false, message: "Không có quyền!" };
   if (rowIndex <= 2) return { success: false, message: "Không thể xóa tài khoản Admin gốc!" }; // Bảo vệ admin đầu tiên
   var sheet = getDbSpreadsheet().getSheetByName("TaiKhoan");
   if (userInfo.role === 'GiaoVu') {
@@ -192,41 +284,45 @@ function deleteAccount(rowIndex, userInfo) {
 }
 
 function getConfig(userInfo) {
-  if (userInfo.role !== 'Admin') return {};
   var sheetConfig = getDbSpreadsheet().getSheetByName("CauHinh");
   if (!sheetConfig) return {};
   var data = sheetConfig.getDataRange().getValues();
-  var config = { donXinHoc: "", danhSachLop: "", exportFolder: "" };
+  var config = { donXinHoc: "", danhSachLop: "", exportFolder: "", namHienTai: "" };
   for (var i = 1; i < data.length; i++) {
     if (data[i][0] === "DonXinHoc_TemplateID") config.donXinHoc = data[i][1] || "";
     if (data[i][0] === "DanhSachLop_TemplateID") config.danhSachLop = data[i][1] || "";
     if (data[i][0] === "ExportFolderID") config.exportFolder = data[i][1] || "";
+    if (data[i][0] === "NamHienTai") config.namHienTai = data[i][1] || "";
   }
   return config;
 }
 
-function saveConfig(configData, userInfo) {
-  if (userInfo.role !== 'Admin') return { success: false, message: "Không có quyền!" };
+function saveConfig(configData, credentials) {
+  var userInfo = verifySession(credentials); if (!userInfo || userInfo.role !== 'Admin') return { success: false, message: "Không có quyền!" };
   var sheetConfig = getDbSpreadsheet().getSheetByName("CauHinh");
   if (!sheetConfig) return { success: false, message: "Thiếu sheet CauHinh" };
 
   var data = sheetConfig.getDataRange().getValues();
-  var updated = { donXinHoc: false, danhSachLop: false, exportFolder: false };
+  var updated = { donXinHoc: false, danhSachLop: false, exportFolder: false, namHienTai: false };
 
   for (var i = 1; i < data.length; i++) {
     if (data[i][0] === "DonXinHoc_TemplateID") { sheetConfig.getRange(i+1, 2).setValue(configData.donXinHoc); updated.donXinHoc = true; }
     if (data[i][0] === "DanhSachLop_TemplateID") { sheetConfig.getRange(i+1, 2).setValue(configData.danhSachLop); updated.danhSachLop = true; }
     if (data[i][0] === "ExportFolderID") { sheetConfig.getRange(i+1, 2).setValue(configData.exportFolder); updated.exportFolder = true; }
+    if (data[i][0] === "NamHienTai") { sheetConfig.getRange(i+1, 2).setValue(configData.namHienTai); updated.namHienTai = true; }
   }
 
   if (!updated.donXinHoc) sheetConfig.appendRow(["DonXinHoc_TemplateID", configData.donXinHoc]);
   if (!updated.danhSachLop) sheetConfig.appendRow(["DanhSachLop_TemplateID", configData.danhSachLop]);
   if (!updated.exportFolder) sheetConfig.appendRow(["ExportFolderID", configData.exportFolder]);
+  if (!updated.namHienTai) sheetConfig.appendRow(["NamHienTai", configData.namHienTai]);
 
   return { success: true, message: "Đã lưu cấu hình!" };
 }
 
-function getCourses(userInfo) {
+function getCourses(credentials) {
+  var userInfo = verifySession(credentials);
+  if (!userInfo) return [];
   var sheet = getDbSpreadsheet().getSheetByName("KhoaHoc");
   if (!sheet) return [];
 
@@ -248,7 +344,9 @@ function getCourses(userInfo) {
   return courses;
 }
 
-function createCourse(courseData, userInfo) {
+function createCourse(courseData, credentials) {
+  var userInfo = verifySession(credentials);
+  if (!userInfo || userInfo.role !== 'GiaoVien') return { success: false, message: "Chỉ Giáo viên mới được tạo khóa học!" };
   var sheet = getDbSpreadsheet().getSheetByName("KhoaHoc");
   if (!sheet) return { success: false, message: "Không tìm thấy sheet 'KhoaHoc'" };
 
@@ -264,7 +362,9 @@ function createCourse(courseData, userInfo) {
   return { success: true, message: "Đã tạo lớp học thành công, vui lòng chờ duyệt." };
 }
 
-function approveCourse(rowIndex) {
+function approveCourse(rowIndex, credentials) {
+  var userInfo = verifySession(credentials);
+  if (!userInfo || (userInfo.role !== 'Admin' && userInfo.role !== 'GiaoVu')) return { success: false, message: "Không có quyền duyệt!" };
   var sheet = getDbSpreadsheet().getSheetByName("KhoaHoc");
   sheet.getRange(rowIndex, 4).setValue("Đã duyệt");
   return { success: true, message: "Đã duyệt lớp học." };
@@ -276,10 +376,13 @@ function approveCourse(rowIndex) {
 
 // Tạo mảng dữ liệu Học viên theo đúng thứ tự cột
 function _mapStudentToArray(s, isUpdate) {
+  // Trật tự các trường phải khớp với schema trong sheet "HocVien"
   var arr = [
-    s.courseId, s.fullName, s.dob, s.gender, s.cccd, s.phone, s.email,
-    s.doiTuong, s.danToc, s.tonGiao, s.trinhDo,
-    s.queQuan, s.noiSinh, s.thuongTru, s.tamTru,
+    s.courseId, s.fullName, s.dob, s.gender, s.cccd, s.ngayCap, s.noiCap,
+    s.phone, s.email, s.doiTuong, s.danToc, s.tonGiao,
+    s.trinhDo, s.trinhDoVanHoa,
+    s.queQuan, s.noiSinh,
+    s.huyenThuongTru, s.xaThuongTru, s.thonThuongTru, s.thuongTru, s.tamTru,
     s.tenCha, s.ngheCha, s.tenMe, s.ngheMe, s.tenVoChong, s.ngheVoChong
   ];
   if (!isUpdate) arr.push(new Date()); // Ngày đăng ký (Cột cuối)
@@ -305,11 +408,14 @@ function getStudentsByCourse(courseId) {
     if (data[i][0] === courseId) {
       students.push({
         courseId: data[i][0], fullName: data[i][1], dob: data[i][2], gender: data[i][3],
-        cccd: data[i][4], phone: data[i][5], email: data[i][6],
-        doiTuong: data[i][7], danToc: data[i][8], tonGiao: data[i][9], trinhDo: data[i][10],
-        queQuan: data[i][11], noiSinh: data[i][12], thuongTru: data[i][13], tamTru: data[i][14],
-        tenCha: data[i][15], ngheCha: data[i][16], tenMe: data[i][17], ngheMe: data[i][18],
-        tenVoChong: data[i][19], ngheVoChong: data[i][20],
+        cccd: data[i][4], ngayCap: data[i][5], noiCap: data[i][6],
+        phone: data[i][7], email: data[i][8], doiTuong: data[i][9],
+        danToc: data[i][10], tonGiao: data[i][11], trinhDo: data[i][12],
+        trinhDoVanHoa: data[i][13], queQuan: data[i][14], noiSinh: data[i][15],
+        huyenThuongTru: data[i][16], xaThuongTru: data[i][17], thonThuongTru: data[i][18],
+        thuongTru: data[i][19], tamTru: data[i][20],
+        tenCha: data[i][21], ngheCha: data[i][22], tenMe: data[i][23], ngheMe: data[i][24],
+        tenVoChong: data[i][25], ngheVoChong: data[i][26],
         rowIndex: i + 1
       });
     }
@@ -318,21 +424,24 @@ function getStudentsByCourse(courseId) {
 }
 
 // Thêm HV thủ công (Bởi Giáo viên)
-function addStudentManual(studentData) {
-  return registerStudent(studentData); // Dùng chung logic appendRow
+function addStudentManual(studentData, credentials) {
+  var userInfo = verifySession(credentials);
+  if (!userInfo || userInfo.role !== 'GiaoVien') return { success: false, message: "Không có quyền!" };
+  return registerStudent(studentData);
 }
 
-// Cập nhật HV
-function updateStudent(rowIndex, studentData) {
+function updateStudent(rowIndex, studentData, credentials) {
+  var userInfo = verifySession(credentials);
+  if (!userInfo || userInfo.role !== 'GiaoVien') return { success: false, message: "Không có quyền!" };
   var sheet = getDbSpreadsheet().getSheetByName("HocVien");
   var arr = _mapStudentToArray(studentData, true);
-  // Cập nhật từ cột 1 (Bỏ qua cột Date đăng ký cuối cùng)
   sheet.getRange(rowIndex, 1, 1, arr.length).setValues([arr]);
   return { success: true, message: "Đã cập nhật học viên!" };
 }
 
-// Xóa HV
-function deleteStudent(rowIndex) {
+function deleteStudent(rowIndex, credentials) {
+  var userInfo = verifySession(credentials);
+  if (!userInfo || userInfo.role !== 'GiaoVien') return { success: false, message: "Không có quyền!" };
   var sheet = getDbSpreadsheet().getSheetByName("HocVien");
   sheet.deleteRow(rowIndex);
   return { success: true, message: "Đã xóa học viên!" };
@@ -342,7 +451,9 @@ function deleteStudent(rowIndex) {
  * XUẤT HỒ SƠ & BÁO CÁO (DOCUMENT GENERATION)
  * ======================================================================= */
 
-function generateDocument(docType, courseId) {
+function generateDocument(docType, courseId, credentials) {
+  var userInfo = verifySession(credentials);
+  if (!userInfo) return { success: false, message: "Không có quyền!" };
   var sheetConfig = getDbSpreadsheet().getSheetByName("CauHinh");
   if (!sheetConfig) return { success: false, message: "Thiếu sheet 'CauHinh'" };
 
