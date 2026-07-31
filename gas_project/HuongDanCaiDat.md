@@ -1,91 +1,65 @@
-# Hướng dẫn Cài đặt Hệ thống Quản lý Đào tạo Nghề (Google Apps Script)
+# Hướng dẫn Cài đặt Hệ thống Quản lý Đào tạo Nghề
+*(Phiên bản mới nhất - UI Hiện đại & Tự động hóa file CSDL)*
 
-Vì hệ thống được xây dựng trên nền tảng Google Workspace, bạn cần làm theo các bước dưới đây để thiết lập Cơ sở dữ liệu (Google Sheets), Cấu trúc thư mục (Google Drive) và mã nguồn (Google Apps Script).
+Để tiết kiệm thời gian và tránh việc tạo nhầm cấu trúc cột, tôi đã chuẩn bị sẵn một file Excel có tên `CSDL_DaoTaoNghe_Template.xlsx` đi kèm với mã nguồn. Bạn chỉ cần làm theo các bước dưới đây:
 
 ---
 
 ## Bước 1: Chuẩn bị Thư mục và File mẫu trên Google Drive
 
 1. Truy cập vào [Google Drive](https://drive.google.com).
-2. Tạo một thư mục mới, ví dụ đặt tên là: `QuanLyDaoTaoNghe`.
-3. Trong thư mục này, tạo một thư mục con tên là `HoSoXuatRa` (Đây là nơi các file quyết định, danh sách được xuất ra sẽ lưu lại).
-4. Tải các file mẫu `.doc` / `.docx` (như Đơn xin học, Quyết định mở lớp...) lên thư mục `QuanLyDaoTaoNghe`.
-5. **Quan trọng:** Mở các file Word đó trên Google Drive và lưu lại dưới dạng **Google Docs**.
-   *(File > Save as Google Docs / Tệp > Lưu dưới dạng Google Tài liệu).*
+2. Tạo một thư mục mới: `QuanLyDaoTaoNghe`.
+3. Trong thư mục này, tạo một thư mục con: `HoSoXuatRa`.
+4. Tải các file mẫu `.doc` / `.docx` lên thư mục `QuanLyDaoTaoNghe`.
+5. **Rất Quan trọng:** Mở các file Word đó trên Google Drive và chọn **Lưu dưới dạng Google Tài liệu (Save as Google Docs)**. Hệ thống tạo file tự động chỉ hoạt động với định dạng Google Docs.
 6. Trong các file mẫu Google Docs, chèn các **thẻ từ khóa (tags)** vào vị trí cần điền dữ liệu. Ví dụ:
    - `{{TEN_KHOA_HOC}}`
    - `{{NGAY_KHAI_GIANG}}`
    - `{{GIAO_VIEN}}`
-   *(Bạn có thể tùy chỉnh thêm tags trong file `Code.gs` ở hàm `generateDocument`)*.
 
 ---
 
-## Bước 2: Thiết lập Cơ sở dữ liệu (Google Sheets)
+## Bước 2: Thiết lập Cơ sở dữ liệu bằng File Template
 
-1. Trong thư mục `QuanLyDaoTaoNghe`, tạo một file Google Sheets mới, đặt tên là `CSDL_DaoTaoNghe`.
-2. Tạo các Sheet với đúng tên và cấu trúc các cột (Row 1 làm tiêu đề) như sau:
-
-**Sheet `TaiKhoan`**
-| Username | Password | Role | HoTen |
-| :--- | :--- | :--- | :--- |
-| admin | 123456 | Admin | Quản trị viên |
-| giaovu1 | 123456 | GiaoVu | Nguyễn Trưởng Giáo vụ |
-| gv_tuan | 123456 | GiaoVien | Trần Tuấn (GVCN) |
-
-**Sheet `KhoaHoc`**
-| CourseID | TenNghe | MaGV | TrangThai | NgayKG | NgayBG |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| (Để trống) | | | | | |
-
-**Sheet `HocVien`**
-| CourseID | HoTen | NgaySinh | GioiTinh | CCCD | DiaChi | SoDienThoai | NgayDangKy |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| (Để trống) | | | | | | | |
-
-**Sheet `CauHinh`**
-| Key | Value | Ghi chú |
-| :--- | :--- | :--- |
-| DonXinHoc_TemplateID | [Dán ID của file Docs mẫu Đơn xin học vào đây] | Lấy ID trên thanh địa chỉ |
-| DanhSachLop_TemplateID | [Dán ID của file Docs mẫu Danh sách lớp vào đây] | |
-| ExportFolderID | [Dán ID của thư mục HoSoXuatRa vào đây] | |
-
-*(Cách lấy ID: Mở file/thư mục trên Google Drive, nhìn lên thanh URL trình duyệt, ID là đoạn mã dài nằm giữa `/d/` và `/edit` hoặc cuối URL).*
+1. Tải file `CSDL_DaoTaoNghe_Template.xlsx` (có sẵn trong thư mục dự án) lên thư mục `QuanLyDaoTaoNghe` trên Google Drive.
+2. Click đúp để mở file Excel đó trên trình duyệt.
+3. Trên thanh công cụ, chọn **Tệp (File)** -> **Lưu dưới dạng Google Trang tính (Save as Google Sheets)**.
+4. Một tab mới sẽ mở ra, đó chính là file cơ sở dữ liệu chính thức của bạn (đã có sẵn các Sheet: `TaiKhoan`, `KhoaHoc`, `HocVien`, `DanhSachNghe`, `DoiTuong`, `CauHinh` với đầy đủ cấu trúc chuẩn).
+5. Bạn có thể xóa file Excel gốc (`.xlsx`) để tránh nhầm lẫn, chỉ giữ lại file Google Sheets.
+6. Ở Sheet `CauHinh`, bạn hãy lấy ID của các file Docs mẫu và Folder xuất ra để dán vào cột `Value` tương ứng. *(ID là đoạn mã nằm giữa `/d/` và `/edit` trên thanh địa chỉ)*.
 
 ---
 
-## Bước 3: Cài đặt mã nguồn Google Apps Script
+## Bước 3: Cài đặt mã nguồn và CẤP QUYỀN (Rất quan trọng)
 
-1. Mở file `CSDL_DaoTaoNghe` (Google Sheets) vừa tạo.
-2. Trên thanh menu, chọn **Tiện ích mở rộng (Extensions)** -> **Apps Script**.
-3. Xóa toàn bộ mã mặc định trong file `Mã.gs` (hoặc `Code.gs`) và copy toàn bộ nội dung từ file `Code.gs` (được cung cấp kèm theo) dán vào.
-4. Bấm dấu cộng **(+)** cạnh chữ `Tệp (Files)`, chọn **HTML**. Đặt tên chính xác là `Index` (viết hoa chữ I). Copy nội dung từ file `Index.html` dán vào.
-5. Tiếp tục bấm dấu cộng **(+)**, chọn **HTML**, đặt tên chính xác là `StudentRegister`. Copy nội dung từ file `StudentRegister.html` dán vào.
-6. Bấm nút **Lưu (Save)** biểu tượng đĩa mềm.
+1. Mở file Google Sheets `CSDL_DaoTaoNghe_Template` (bản Google Sheets).
+2. Chọn **Tiện ích mở rộng (Extensions)** -> **Apps Script**.
+3. Tại giao diện Apps Script:
+   - File `Mã.gs` (hoặc `Code.gs`): Dán nội dung từ file `Code.gs` vào.
+   - Bấm dấu **+** -> **HTML** -> tạo file tên `Index`. Dán nội dung từ file `Index.html` vào.
+   - Bấm dấu **+** -> **HTML** -> tạo file tên `StudentRegister`. Dán nội dung từ file `StudentRegister.html` vào.
+4. Bấm **Lưu (Save)**.
+
+### ⚠️ BƯỚC KHẮC PHỤC LỖI DRIVEAPP: XIN QUYỀN TRUY CẬP
+*Vì code có chức năng tự động tạo hồ sơ Google Docs, nên Google yêu cầu quyền thao tác Drive.*
+1. Tại màn hình `Code.gs`, nhìn lên thanh công cụ phía trên.
+2. Ở ô chọn hàm, chọn hàm **`setupPermissions`**.
+3. Bấm nút **Chạy (Run)**.
+4. Một hộp thoại Yêu cầu cấp quyền sẽ hiện ra.
+5. Bấm **Xem lại quyền (Review permissions)** -> Chọn tài khoản Google của bạn -> Bấm **Nâng cao (Advanced)** -> Bấm **Đi tới dự án (Go to... unsafe)** -> Kéo xuống dưới cùng và bấm **Cho phép (Allow)**.
+6. Nếu bảng Nhật ký bên dưới hiện chữ `Đã cấp quyền thành công!`, bạn đã hoàn tất.
 
 ---
 
-## Bước 4: Triển khai (Deploy) thành Web App
+## Bước 4: Triển khai (Deploy) Hệ thống
 
-1. Góc trên bên phải giao diện Apps Script, bấm nút **Triển khai (Deploy)** -> **Tùy chọn triển khai mới (New deployment)**.
-2. Ở mục **Chọn loại (Select type)** (biểu tượng bánh răng), chọn **Ứng dụng web (Web app)**.
-3. Cấu hình như sau:
-   - Mô tả: `Version 1.0`
+**Lưu ý:** Mỗi lần bạn sửa code, bạn **BẮT BUỘC** phải tạo phiên bản Deploy mới.
+1. Góc trên bên phải, bấm nút **Triển khai (Deploy)** -> **Tùy chọn triển khai mới (New deployment)**.
+2. Mục **Chọn loại (Select type)** (biểu tượng bánh răng), chọn **Ứng dụng web (Web app)**.
+3. Cấu hình:
    - Tùy chọn thực thi (Execute as): Chọn **Tôi (Me)**.
-   - Ai có quyền truy cập (Who has access): Chọn **Bất kỳ ai (Anyone)** *(Để học viên không có tài khoản Google vẫn quét QR đăng ký được).*
+   - Ai có quyền truy cập (Who has access): Chọn **Bất kỳ ai (Anyone)**.
 4. Bấm **Triển khai (Deploy)**.
-5. Sẽ có một bảng yêu cầu cấp quyền (**Authorize access**). Bấm vào đó, chọn tài khoản Google của bạn, click **Nâng cao (Advanced)** -> chọn **Đi tới dự án (Go to... unsafe)** và bấm **Cho phép (Allow)**.
-6. Copy đường link URL Web App được cung cấp.
+5. Copy link Web App. Mở link và đăng nhập thử bằng tài khoản: `admin` / `123456`.
 
----
-
-## Bước 5: Sử dụng
-
-1. Truy cập vào URL Web App bạn vừa copy.
-2. Đăng nhập bằng tài khoản Admin đã tạo ở Sheet `TaiKhoan` (admin / 123456) để kiểm tra giao diện.
-3. Thử đăng nhập bằng tài khoản Giáo viên (gv_tuan / 123456).
-4. Tạo một khóa học mới, sau đó qua tài khoản Giáo vụ duyệt khóa học đó.
-5. Quay lại tài khoản Giáo viên, bấm "Chi tiết" lớp học, vào tab "Hồ sơ & QR", bấm Tạo mã QR.
-6. Dùng điện thoại quét mã QR để thử chức năng điền form Đăng ký của học viên. Kiểm tra dữ liệu đổ về tab "Học viên" và trong Sheet `HocVien`.
-7. Nhấn "Xuất Đơn xin học" để test khả năng sinh file Word tự động.
-
-Chúc bạn triển khai thành công!
+Chúc bạn cài đặt thành công! Hệ thống giờ đây đã có giao diện hiện đại mới, bổ sung đầy đủ trường thông tin gia đình/cá nhân, và có sẵn chức năng Admin cấp quyền cho Giáo vụ.

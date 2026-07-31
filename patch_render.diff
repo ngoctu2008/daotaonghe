@@ -1,0 +1,32 @@
+--- /app/gas_project/Index.html
++++ /app/gas_project/Index.html
+@@ -417,7 +417,13 @@
+             let dEnd = c.end ? new Date(c.end).toLocaleDateString('vi-VN') : '';
+             let sBadge = c.status === 'Đã duyệt' ? 'bg-success' : 'bg-warning text-dark';
+
+-            tr.innerHTML = `<td>${c.id}</td><td>${c.name}</td><td>${c.teacher}</td><td>${dStart}</td><td>${dEnd}</td><td><span class="badge ${sBadge}">${c.status}</span></td><td>${actionHtml}</td>`;
++            tr.innerHTML = `<td>${escapeHtml(c.id)}</td>
++                            <td>${escapeHtml(c.name)}</td>
++                            <td>${escapeHtml(c.teacher)}</td>
++                            <td>${escapeHtml(dStart)}</td>
++                            <td>${escapeHtml(dEnd)}</td>
++                            <td><span class="badge ${sBadge}">${escapeHtml(c.status)}</span></td>
++                            <td>${actionHtml}</td>`;
+             tbody.appendChild(tr);
+           });
+         }).getCourses(currentUser);
+@@ -465,7 +471,13 @@
+                          <button class="btn btn-sm btn-outline-danger py-0" onclick="deleteStudent(${s.rowIndex})"><i class="bi bi-trash"></i></button>`;
+             }
+
+-            tr.innerHTML = `<td>${s.fullName}</td><td>${d}</td><td>${s.gender}</td><td>${s.cccd}</td><td>${s.doiTuong||''}</td><td>${s.phone}</td><td>${actions}</td>`;
++            tr.innerHTML = `<td>${escapeHtml(s.fullName)}</td>
++                            <td>${escapeHtml(d)}</td>
++                            <td>${escapeHtml(s.gender)}</td>
++                            <td>${escapeHtml(s.cccd)}</td>
++                            <td>${escapeHtml(s.doiTuong||'')}</td>
++                            <td>${escapeHtml(s.phone)}</td>
++                            <td>${actions}</td>`;
+             tbody.appendChild(tr);
+           });
+         }).getStudentsByCourse(currentCourseId);
