@@ -29,7 +29,8 @@ function setupPermissions() {
  */
 function getLogoUrl() {
   try {
-    var files = DriveApp.getFilesByName('logo.png');
+    var folder = DriveApp.getFolderById('1r8oSnXq47_0eJyE30eyTjbV9MKgo_hhM');
+    var files = folder.getFilesByName('Logo TT KV.png');
     if (files.hasNext()) {
       var file = files.next();
       file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
@@ -111,29 +112,52 @@ function getCategoryData(sheetName, credentials) {
   var data = sheet.getDataRange().getValues();
   var items = [];
   for (var i = 1; i < data.length; i++) {
-    if (data[i][0]) items.push({ value: data[i][0].toString().trim(), rowIndex: i + 1 });
+    if (data[i][0]) {
+      if (sheetName === 'DanhSachNghe') {
+        items.push({
+          value: data[i][0].toString().trim(),
+          thoiGian: data[i][1] ? data[i][1].toString().trim() : "",
+          trinhDo: data[i][2] ? data[i][2].toString().trim() : "",
+          tongGio: data[i][3] ? data[i][3].toString().trim() : "",
+          rowIndex: i + 1
+        });
+      } else {
+        items.push({ value: data[i][0].toString().trim(), rowIndex: i + 1 });
+      }
+    }
   }
   return items;
 }
 
-function addCategoryItem(sheetName, itemValue, credentials) {
+function addCategoryItem(sheetName, itemData, credentials) {
   var userInfo = verifySession(credentials); if (!userInfo || (userInfo.role !== 'Admin' && userInfo.role !== 'GiaoVu')) return { success: false, message: "Không có quyền!" };
-  if (!itemValue || itemValue.trim() === "") return { success: false, message: "Dữ liệu trống!" };
   var sheet = getDbSpreadsheet().getSheetByName(sheetName);
   if (!sheet) return { success: false, message: "Không tìm thấy Sheet " + sheetName };
 
-  sheet.appendRow([itemValue.trim()]);
+  if (sheetName === 'DanhSachNghe') {
+    if (!itemData || !itemData.name || itemData.name.trim() === "") return { success: false, message: "Tên nghề trống!" };
+    sheet.appendRow([itemData.name.trim(), itemData.thoiGian, itemData.trinhDo, itemData.tongGio]);
+  } else {
+    if (!itemData || itemData.trim() === "") return { success: false, message: "Dữ liệu trống!" };
+    sheet.appendRow([itemData.trim()]);
+  }
+
   return { success: true, message: "Đã thêm thành công!" };
 }
 
-function updateCategoryItem(sheetName, rowIndex, newItemValue, credentials) {
+function updateCategoryItem(sheetName, rowIndex, itemData, credentials) {
   var userInfo = verifySession(credentials); if (!userInfo || (userInfo.role !== 'Admin' && userInfo.role !== 'GiaoVu')) return { success: false, message: "Không có quyền!" };
-  if (!newItemValue || newItemValue.trim() === "") return { success: false, message: "Dữ liệu trống!" };
   var sheet = getDbSpreadsheet().getSheetByName(sheetName);
   if (!sheet) return { success: false, message: "Không tìm thấy Sheet " + sheetName };
 
-  sheet.getRange(rowIndex, 1).setValue(newItemValue.trim());
-  return { success: true, message: "Đã cập nhật thành công!" };
+  if (sheetName === 'DanhSachNghe') {
+    if (!itemData || !itemData.name || itemData.name.trim() === "") return { success: false, message: "Tên nghề trống!" };
+    sheet.getRange(rowIndex, 1, 1, 4).setValues([[itemData.name.trim(), itemData.thoiGian, itemData.trinhDo, itemData.tongGio]]);
+  } else {
+    if (!itemData || itemData.trim() === "") return { success: false, message: "Dữ liệu trống!" };
+    sheet.getRange(rowIndex, 1).setValue(itemData.trim());
+  }
+  return { success: true, message: "Đã cập nhật!" };
 }
 
 function deleteCategoryItem(sheetName, rowIndex, credentials) {
@@ -183,7 +207,7 @@ function loginUser(username, password) {
     if (u === (username || "").trim() && p === (password || "").trim()) {
       return {
         success: true,
-        user: { username: u, role: role, name: name, rowIndex: i + 1 }
+        user: { username: u, password: p, role: role, name: name, rowIndex: i + 1 }
       };
     }
   }
@@ -397,7 +421,9 @@ function registerStudent(studentData) {
   return { success: true, message: "Đăng ký thành công!" };
 }
 
-function getStudentsByCourse(courseId) {
+function getStudentsByCourse(courseId, credentials) {
+  var userInfo = verifySession(credentials);
+  if (!userInfo) return [];
   var sheet = getDbSpreadsheet().getSheetByName("HocVien");
   if (!sheet) return [];
 
@@ -497,4 +523,28 @@ function generateDocument(docType, courseId, credentials) {
 
 function getWebAppUrl() {
   return ScriptApp.getService().getUrl();
+}
+
+
+function batchImportCategoryItems(sheetName, itemsArray, credentials) {
+  var userInfo = verifySession(credentials); if (!userInfo || (userInfo.role !== 'Admin' && userInfo.role !== 'GiaoVu')) return { success: false, message: "Không có quyền!" };
+  var sheet = getDbSpreadsheet().getSheetByName(sheetName);
+  if (!sheet) return { success: false, message: "Không tìm thấy Sheet " + sheetName };
+
+  if (itemsArray.length === 0) return { success: false, message: "Không có dữ liệu!" };
+
+  var rows = [];
+  if (sheetName === 'DanhSachNghe') {
+    for (var i = 0; i < itemsArray.length; i++) {
+      var item = itemsArray[i];
+      rows.push([item.name.trim(), item.thoiGian, item.trinhDo, item.tongGio]);
+    }
+  } else {
+    for (var i = 0; i < itemsArray.length; i++) {
+      rows.push([itemsArray[i].trim()]);
+    }
+  }
+
+  sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, rows[0].length).setValues(rows);
+  return { success: true, message: "Nhập thành công " + rows.length + " mục." };
 }

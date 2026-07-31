@@ -22,7 +22,7 @@
       #sidebar .nav-link { color: #495057; padding: 12px 25px; font-size: 0.95rem; cursor: pointer; font-weight: 500; transition: all 0.2s;}
       #sidebar .nav-link:hover, #sidebar .nav-link.active { color: #3f6ad8; background-color: #e0f3ff; border-right: 3px solid #3f6ad8; }
       #sidebar .brand { padding: 25px; font-size: 24px; font-weight: bold; color: #3f6ad8; text-align: center; border-bottom: 1px solid #f1f4f6; margin-bottom: 15px; }
-      #content-area { flex-grow: 1; overflow-y: auto; padding: 30px; background-color: #f1f4f6; }
+      #content-area { flex-grow: 1; overflow-y: auto; padding: 30px; padding-bottom: 50px; background-color: #f1f4f6; }
 
       .top-header { background: white; padding: 15px 30px; border-radius: 0; box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075); margin: -30px -30px 30px -30px; display: flex; justify-content: space-between; align-items: center; }
       #qrCodeContainer { text-align: center; margin-top: 20px; }
@@ -79,6 +79,46 @@
           <span class="badge bg-secondary" id="userRoleBadge"></span>
         </div>
       </div>
+
+
+    <!-- MODAL: NGHỀ ĐÀO TẠO -->
+    <div class="modal fade" id="ngheModal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="ngheModalTitle">Thêm Nghề Đào Tạo</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" id="nRowIndex">
+            <div class="mb-3">
+              <label class="form-label">Tên nghề *</label>
+              <input type="text" id="n_name" class="form-control">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Thời gian đào tạo (tháng)</label>
+              <input type="number" id="n_thoiGian" class="form-control" min="0" step="0.5">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Trình độ đào tạo</label>
+              <select id="n_trinhDo" class="form-select">
+                <option value="Sơ cấp nghề">Sơ cấp nghề</option>
+                <option value="Đào tạo thường xuyên">Đào tạo thường xuyên</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Tổng số giờ</label>
+              <input type="number" id="n_tongGio" class="form-control" min="0">
+            </div>
+            <div id="n_msg" class="text-primary small"></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+            <button type="button" class="btn btn-primary" onclick="saveNgheDaoTao()">Lưu</button>
+          </div>
+        </div>
+      </div>
+    </div>
 
       <!-- TAB: KHÓA HỌC -->
       <div id="tab-courses" class="tab-pane">
@@ -190,23 +230,35 @@
       </div>
 
 
+
       <!-- TAB: QUẢN LÝ DANH MỤC (Admin / GiaoVu) -->
       <div id="tab-categories" class="tab-pane hidden">
         <div class="row">
-          <div class="col-md-6">
+          <div class="col-md-7">
             <div class="card shadow-sm">
               <div class="card-header d-flex justify-content-between align-items-center">
                 <span>Nghề Đào Tạo</span>
-                <button class="btn btn-sm btn-primary" onclick="addCategory('DanhSachNghe')"><i class="bi bi-plus"></i> Thêm</button>
+                <div>
+                  <input type="file" id="importExcelFile" class="hidden" accept=".xlsx, .xls">
+                  <button class="btn btn-sm btn-outline-info me-1" onclick="downloadTemplate()"><i class="bi bi-download"></i> File Mẫu</button>
+                  <button class="btn btn-sm btn-outline-secondary me-1" onclick="document.getElementById('importExcelFile').click()"><i class="bi bi-file-earmark-arrow-up"></i> Nhập Excel</button>
+                  <button class="btn btn-sm btn-outline-success me-1" onclick="exportCategoriesToExcel()"><i class="bi bi-file-earmark-arrow-down"></i> Xuất Excel</button>
+                  <button class="btn btn-sm btn-primary" onclick="openNgheModal()"><i class="bi bi-plus"></i> Thêm</button>
+                </div>
               </div>
               <div class="card-body p-0">
-                <table class="table table-sm table-hover mb-0" id="tbl-DanhSachNghe">
-                  <tbody></tbody>
-                </table>
+                <div class="table-responsive">
+                  <table class="table table-sm table-hover mb-0" id="tbl-DanhSachNghe">
+                    <thead class="table-light"><tr>
+                      <th class="ps-3">Tên Nghề</th><th>T.Gian (Tháng)</th><th>Trình Độ</th><th>Tổng Giờ</th><th class="text-end pe-3">Thao tác</th>
+                    </tr></thead>
+                    <tbody></tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>
-          <div class="col-md-6">
+          <div class="col-md-5">
             <div class="card shadow-sm">
               <div class="card-header d-flex justify-content-between align-items-center">
                 <span>Đối Tượng Học Viên</span>
@@ -220,6 +272,8 @@
             </div>
           </div>
         </div>
+      </div>
+
       </div>
 
       <!-- TAB: CẤU HÌNH (Admin) -->
@@ -375,12 +429,13 @@
       </div>
     </div>
 
-        <div style="text-align: center; padding: 20px; color: #6c757d; font-size: 0.9rem; margin-top: 40px; border-top: 1px solid #dee2e6;">
-            Thiết kế và vận hành bởi: Phạm Ngọc Tú - Mọi chi tiết xin liên hệ email: ngoctu.dnkd@gmail.com
-        </div>
+
       </div> <!-- End content-area -->
 
-    <!-- Scripts -->
+<!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <script>
       let currentUser = null;
@@ -609,7 +664,7 @@
                             <td>${actions}</td>`;
             tbody.appendChild(tr);
           });
-        }).getStudentsByCourse(currentCourseId);
+        }).getStudentsByCourse(currentCourseId, currentUser);
       }
 
       function openStudentForm() {
@@ -754,7 +809,7 @@
       function saveAccount() {
         let rowIndex = document.getElementById('aRowIndex').value;
         let data = { username: document.getElementById('a_user').value, password: document.getElementById('a_pass').value, role: document.getElementById('a_role').value, name: document.getElementById('a_name').value };
-        if(!data.username || !data.password) return alert("Vui lòng nhập tên đăng nhập và mật khẩu");
+        if(!data.username || (!rowIndex && !data.password)) return alert("Vui lòng nhập tên đăng nhập (và mật khẩu khi thêm mới)!");
         let msg = document.getElementById('a_msg'); msg.innerText = "Đang lưu...";
         if (rowIndex) google.script.run.withSuccessHandler(res => { loadAccounts(); closeAccountForm(); }).updateAccount(rowIndex, data, currentUser);
         else google.script.run.withSuccessHandler(res => { loadAccounts(); closeAccountForm(); }).addAccount(data, currentUser);
@@ -790,20 +845,32 @@
 
       // --- CATEGORIES LOGIC ---
 
-      function loadCategories(sheetName) {
+function loadCategories(sheetName) {
         let tbody = document.querySelector(`#tbl-${sheetName} tbody`);
         if(!tbody) return;
-        tbody.innerHTML = '<tr><td class="text-center small">Đang tải...</td></tr>';
+        tbody.innerHTML = `<tr><td colspan="${sheetName === 'DanhSachNghe' ? 5 : 2}" class="text-center small">Đang tải...</td></tr>`;
 
         google.script.run.withSuccessHandler(items => {
           tbody.innerHTML = '';
-          if (items.length === 0) return tbody.innerHTML = '<tr><td class="text-center small text-muted">Chưa có dữ liệu.</td></tr>';
+          if (items.length === 0) return tbody.innerHTML = `<tr><td colspan="${sheetName === 'DanhSachNghe' ? 5 : 2}" class="text-center small text-muted">Chưa có dữ liệu.</td></tr>`;
 
           items.forEach(item => {
             let tr = document.createElement('tr');
-            let actions = `<button class="btn btn-sm btn-link py-0 px-1" onclick="editCategory('${sheetName}', ${item.rowIndex}, '${escapeHtml(item.value).replace(/'/g, "\\'")}')"><i class="bi bi-pencil"></i></button>
-                           <button class="btn btn-sm btn-link text-danger py-0 px-1" onclick="deleteCategory('${sheetName}', ${item.rowIndex})"><i class="bi bi-trash"></i></button>`;
-            tr.innerHTML = `<td class="ps-3 align-middle">${escapeHtml(item.value)}</td><td class="text-end pe-2" style="width: 80px;">${actions}</td>`;
+if (sheetName === 'DanhSachNghe') {
+              let safeItem = encodeURIComponent(JSON.stringify(item));
+              let actions = `<button class="btn btn-sm btn-link py-0 px-1" onclick="editNgheModal('${safeItem}')"><i class="bi bi-pencil"></i></button>
+                             <button class="btn btn-sm btn-link text-danger py-0 px-1" onclick="deleteCategory('${sheetName}', ${item.rowIndex})"><i class="bi bi-trash"></i></button>`;
+              tr.innerHTML = `<td class="ps-3 align-middle">${escapeHtml(item.value)}</td>
+                              <td class="align-middle">${escapeHtml(item.thoiGian)}</td>
+                              <td class="align-middle">${escapeHtml(item.trinhDo)}</td>
+                              <td class="align-middle">${escapeHtml(item.tongGio)}</td>
+                              <td class="text-end pe-2" style="width: 80px;">${actions}</td>`;
+} else {
+              let safeItemVal = encodeURIComponent(item.value);
+              let actions = `<button class="btn btn-sm btn-link py-0 px-1" onclick="editCategory('${sheetName}', ${item.rowIndex}, '${safeItemVal}')"><i class="bi bi-pencil"></i></button>
+                             <button class="btn btn-sm btn-link text-danger py-0 px-1" onclick="deleteCategory('${sheetName}', ${item.rowIndex})"><i class="bi bi-trash"></i></button>`;
+              tr.innerHTML = `<td class="ps-3 align-middle">${escapeHtml(item.value)}</td><td class="text-end pe-2" style="width: 80px;">${actions}</td>`;
+            }
             tbody.appendChild(tr);
           });
         }).getCategoryData(sheetName, currentUser);
@@ -812,8 +879,56 @@
         if (sheetName === 'DanhSachNghe') loadCategories('DoiTuong');
       }
 
+      function openNgheModal() {
+        document.getElementById('nRowIndex').value = "";
+        document.getElementById('n_name').value = "";
+        document.getElementById('n_thoiGian').value = "";
+        document.getElementById('n_trinhDo').value = "Sơ cấp nghề";
+        document.getElementById('n_tongGio').value = "";
+        document.getElementById('ngheModalTitle').innerText = "Thêm Nghề Đào Tạo";
+        document.getElementById('n_msg').innerText = "";
+        new bootstrap.Modal(document.getElementById('ngheModal')).show();
+      }
+
+function editNgheModal(safeItemObj) {
+        let item = JSON.parse(decodeURIComponent(safeItemObj));
+        document.getElementById('nRowIndex').value = item.rowIndex;
+        document.getElementById('n_name').value = item.value || "";
+        document.getElementById('n_thoiGian').value = item.thoiGian || "";
+        document.getElementById('n_trinhDo').value = item.trinhDo || "Sơ cấp nghề";
+        document.getElementById('n_tongGio').value = item.tongGio || "";
+        document.getElementById('ngheModalTitle').innerText = "Sửa Nghề Đào Tạo";
+        document.getElementById('n_msg').innerText = "";
+        new bootstrap.Modal(document.getElementById('ngheModal')).show();
+      }
+
+      function saveNgheDaoTao() {
+        let rowIndex = document.getElementById('nRowIndex').value;
+        let data = {
+          name: document.getElementById('n_name').value,
+          thoiGian: document.getElementById('n_thoiGian').value,
+          trinhDo: document.getElementById('n_trinhDo').value,
+          tongGio: document.getElementById('n_tongGio').value
+        };
+        if(!data.name) return alert("Vui lòng nhập tên nghề!");
+
+        document.getElementById('n_msg').innerText = "Đang lưu...";
+        if (rowIndex) {
+          google.script.run.withSuccessHandler(res => {
+            if(res.success) { bootstrap.Modal.getInstance(document.getElementById('ngheModal')).hide(); loadCategories('DanhSachNghe'); }
+            else alert(res.message);
+          }).updateCategoryItem('DanhSachNghe', rowIndex, data, currentUser);
+        } else {
+          google.script.run.withSuccessHandler(res => {
+            if(res.success) { bootstrap.Modal.getInstance(document.getElementById('ngheModal')).hide(); loadCategories('DanhSachNghe'); }
+            else alert(res.message);
+          }).addCategoryItem('DanhSachNghe', data, currentUser);
+        }
+      }
+
       function addCategory(sheetName) {
-        let title = sheetName === 'DanhSachNghe' ? "Nghề Đào Tạo" : "Đối Tượng";
+        if(sheetName === 'DanhSachNghe') return openNgheModal(); // Safety fallback
+        let title = "Đối Tượng";
         let val = prompt(`Nhập tên ${title} mới:`);
         if(!val || !val.trim()) return;
 
@@ -823,8 +938,10 @@
         }).addCategoryItem(sheetName, val, currentUser);
       }
 
-      function editCategory(sheetName, rowIndex, oldVal) {
-        let title = sheetName === 'DanhSachNghe' ? "Nghề Đào Tạo" : "Đối Tượng";
+function editCategory(sheetName, rowIndex, safeOldVal) {
+        if(sheetName === 'DanhSachNghe') return; // Handled by editNgheModal
+        let oldVal = decodeURIComponent(safeOldVal);
+        let title = "Đối Tượng";
         let val = prompt(`Sửa tên ${title}:`, oldVal);
         if(!val || !val.trim() || val === oldVal) return;
 
@@ -842,6 +959,93 @@
         }).deleteCategoryItem(sheetName, rowIndex, currentUser);
       }
 
+
+      // --- EXCEL IMPORT/EXPORT ---
+
+      function downloadTemplate() {
+        let data = [["Tên nghề", "Thời gian đào tạo (tháng)", "Trình độ đào tạo", "Tổng số giờ"]];
+        let ws = XLSX.utils.aoa_to_sheet(data);
+        let wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Mau_Nhap_Lieu");
+        XLSX.writeFile(wb, "Mau_Nhap_Danh_Muc_Nghe.xlsx");
+      }
+
+      function exportCategoriesToExcel() {
+        let tbody = document.querySelector('#tbl-DanhSachNghe tbody');
+        let rows = Array.from(tbody.querySelectorAll('tr'));
+
+        let data = [["Tên nghề", "Thời gian đào tạo (tháng)", "Trình độ đào tạo", "Tổng số giờ"]];
+
+        rows.forEach(tr => {
+          let cells = tr.querySelectorAll('td');
+          if (cells.length === 5) {
+            data.push([
+              cells[0].innerText,
+              cells[1].innerText,
+              cells[2].innerText,
+              cells[3].innerText
+            ]);
+          }
+        });
+
+        let ws = XLSX.utils.aoa_to_sheet(data);
+        let wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "DanhSachNghe");
+        XLSX.writeFile(wb, "Danh_Muc_Nghe.xlsx");
+      }
+
+      document.addEventListener('DOMContentLoaded', () => {
+        let importFile = document.getElementById('importExcelFile');
+        if (importFile) {
+          importFile.addEventListener('change', function(e) {
+            let file = e.target.files[0];
+            if (!file) return;
+
+            let reader = new FileReader();
+            reader.onload = function(e) {
+              let data = new Uint8Array(e.target.result);
+              let workbook = XLSX.read(data, {type: 'array'});
+              let firstSheetName = workbook.SheetNames[0];
+              let worksheet = workbook.Sheets[firstSheetName];
+              let json = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+
+              if (json.length > 1) {
+                let payload = [];
+                for(let i = 1; i < json.length; i++) {
+                  let row = json[i];
+                  if(row.length > 0 && row[0]) {
+                    payload.push({
+                      name: row[0],
+                      thoiGian: row[1] || "",
+                      trinhDo: row[2] || "Sơ cấp nghề",
+                      tongGio: row[3] || ""
+                    });
+                  }
+                }
+
+                if (payload.length > 0) {
+                  if(confirm(`Tìm thấy ${payload.length} nghề hợp lệ. Bạn có muốn nhập vào hệ thống?`)) {
+                    google.script.run.withSuccessHandler(res => {
+                      if(res.success) { alert("Nhập dữ liệu thành công!"); loadCategories('DanhSachNghe'); }
+                      else alert(res.message);
+                    }).batchImportCategoryItems('DanhSachNghe', payload, currentUser);
+                  }
+                } else {
+                  alert("Không tìm thấy dữ liệu hợp lệ trong file!");
+                }
+              }
+            };
+            reader.readAsArrayBuffer(file);
+            importFile.value = "";
+          });
+        }
+      });
+
     </script>
+
+    <div style="position: fixed; bottom: 0; left: 0; width: 100%; text-align: center; padding: 10px; color: #6c757d; font-size: 0.85rem; background-color: #f1f4f6; border-top: 1px solid #dee2e6; z-index: 1000;">
+        Thiết kế và vận hành bởi: Phạm Ngọc Tú - Mọi chi tiết xin liên hệ email: ngoctu.dnkd@gmail.com
+    </div>
+
   </body>
 </html>
