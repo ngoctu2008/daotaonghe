@@ -124,16 +124,65 @@
               <i class="fa-solid <?= courses[i].icon ?>"></i>
             </div>
             <h4 class="card-title text-center mb-3"><?= courses[i].title ?></h4>
-            <div class="card-text mt-auto">
+            <div class="card-text mt-auto mb-3">
               <p><strong><i class="fa-regular fa-clock text-primary me-2"></i>Thời gian:</strong> <?= courses[i].level ?></p>
-              <p class="mb-0"><strong><i class="fa-solid fa-award text-primary me-2"></i>Chuẩn đầu ra:</strong> <?= courses[i].outcome ?></p>
+              <p class="mb-0"><strong><i class="fa-solid fa-award text-primary me-2"></i>Mục tiêu:</strong> <?= courses[i].outcome ?></p>
             </div>
+            <!-- Nút mở Modal Chi tiết -->
+            <button class="btn btn-outline-primary w-100 mt-auto" data-bs-toggle="modal" data-bs-target="#modal-<?= courses[i].id ?>">
+              <i class="fa-solid fa-circle-info me-2"></i>Xem chi tiết chuẩn đầu ra
+            </button>
           </div>
         </div>
         <? } ?>
       </div>
     </div>
   </section>
+
+  <!-- ==========================================
+       MODALS CHO TỪNG CHƯƠNG TRÌNH ĐÀO TẠO
+       ========================================== -->
+  <? for (var i = 0; i < courses.length; i++) { ?>
+  <div class="modal fade" id="modal-<?= courses[i].id ?>" tabindex="-1" aria-labelledby="modalLabel-<?= courses[i].id ?>" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title" id="modalLabel-<?= courses[i].id ?>">
+            <i class="fa-solid <?= courses[i].icon ?> me-2"></i>Chi tiết nghề: <?= courses[i].title ?>
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4">
+          <p class="lead text-muted border-bottom pb-3 mb-4"><?= courses[i].details.description ?></p>
+
+          <div class="row g-4">
+            <div class="col-md-12">
+              <h6 class="text-primary fw-bold mb-2"><i class="fa-solid fa-brain me-2"></i>Chuẩn về Kiến thức</h6>
+              <p><?= courses[i].details.knowledge ?></p>
+            </div>
+
+            <div class="col-md-12">
+              <h6 class="text-primary fw-bold mb-2"><i class="fa-solid fa-screwdriver-wrench me-2"></i>Chuẩn về Kỹ năng</h6>
+              <p><?= courses[i].details.skills ?></p>
+            </div>
+
+            <div class="col-md-12">
+              <div class="alert alert-success border-start border-success border-4 mt-2">
+                <h6 class="text-success fw-bold mb-2"><i class="fa-solid fa-briefcase me-2"></i>Cơ hội việc làm sau tốt nghiệp</h6>
+                <p class="mb-0"><?= courses[i].details.career ?></p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+          <!-- Bỏ data-bs-dismiss="modal" để cuộn và vẫn đóng modal -->
+          <button type="button" class="btn btn-primary" data-bs-dismiss="modal" onclick="document.getElementById('footer').scrollIntoView({behavior: 'smooth'})">Liên hệ Đăng ký ngay</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <? } ?>
 
   <!-- ==========================================
        SECTION 3: CƠ SỞ VẬT CHẤT & CÔNG NGHỆ
@@ -210,7 +259,7 @@
   <!-- ==========================================
        FOOTER (Chân trang)
        ========================================== -->
-  <footer class="footer">
+  <footer id="footer" class="footer">
     <div class="container">
       <div class="row">
         <!-- Thông tin liên hệ -->
