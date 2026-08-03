@@ -8,14 +8,14 @@
       offset: 50
     });
 
-    // Xử lý cuộn trang mượt mà cho các anchor links trong Navbar
-    document.querySelectorAll('a.nav-link[href^="#"]').forEach(anchor => {
+    // Xử lý cuộn trang mượt mà cho TẤT CẢ các anchor links (Navbar và nút bấm)
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
       anchor.addEventListener('click', function (e) {
         e.preventDefault();
 
-        // Đóng navbar collapse trên thiết bị di động sau khi click
+        // Đóng navbar collapse trên thiết bị di động sau khi click (nếu có)
         var navbarCollapse = document.querySelector('.navbar-collapse');
-        if (navbarCollapse.classList.contains('show')) {
+        if (navbarCollapse && navbarCollapse.classList.contains('show')) {
           var bsCollapse = new bootstrap.Collapse(navbarCollapse, {toggle: false});
           bsCollapse.hide();
         }
