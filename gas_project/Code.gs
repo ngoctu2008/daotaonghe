@@ -29,22 +29,15 @@ function setupPermissions() {
  */
 function getLogoUrl() {
   try {
-    var sheetConfig = getDbSpreadsheet().getSheetByName("CauHinh");
-    if (sheetConfig) {
-      var data = sheetConfig.getDataRange().getValues();
-      for (var i = 1; i < data.length; i++) {
-        if (data[i][0] === "Logo_FileID" && data[i][1]) {
-          // Attempt to set sharing permissions just in case
-          try {
-            var file = DriveApp.getFileById(data[i][1]);
-            file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-          } catch(e) {}
-          return "https://drive.google.com/uc?export=view&id=" + data[i][1];
-        }
-      }
+    var folder = DriveApp.getFolderById('1r8oSnXq47_0eJyE30eyTjbV9MKgo_hhM');
+    var files = folder.getFilesByName('Logo TT KV.png');
+    if (files.hasNext()) {
+      var file = files.next();
+      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+      return "https://drive.google.com/uc?export=view&id=" + file.getId();
     }
   } catch (e) {
-    // Ignore errors, return empty
+    // Ignore permissions/search errors
   }
   return ""; // Fallback
 }
@@ -318,13 +311,10 @@ function getConfig(userInfo) {
   var sheetConfig = getDbSpreadsheet().getSheetByName("CauHinh");
   if (!sheetConfig) return {};
   var data = sheetConfig.getDataRange().getValues();
-  var config = { donXinHoc: "", danhSachLop: "", dstnXa: "", dstnTt: "", logoFileId: "", exportFolder: "", namHienTai: "" };
+  var config = { donXinHoc: "", danhSachLop: "", exportFolder: "", namHienTai: "" };
   for (var i = 1; i < data.length; i++) {
     if (data[i][0] === "DonXinHoc_TemplateID") config.donXinHoc = data[i][1] || "";
     if (data[i][0] === "DanhSachLop_TemplateID") config.danhSachLop = data[i][1] || "";
-    if (data[i][0] === "DSTNXa_TemplateID") config.dstnXa = data[i][1] || "";
-    if (data[i][0] === "DSTNTT_TemplateID") config.dstnTt = data[i][1] || "";
-    if (data[i][0] === "Logo_FileID") config.logoFileId = data[i][1] || "";
     if (data[i][0] === "ExportFolderID") config.exportFolder = data[i][1] || "";
     if (data[i][0] === "NamHienTai") config.namHienTai = data[i][1] || "";
   }
@@ -337,33 +327,21 @@ function saveConfig(configData, credentials) {
   if (!sheetConfig) return { success: false, message: "Thiếu sheet CauHinh" };
 
   var data = sheetConfig.getDataRange().getValues();
-  var keysToUpdate = [
-    { key: "DonXinHoc_TemplateID", val: configData.donXinHoc },
-    { key: "DanhSachLop_TemplateID", val: configData.danhSachLop },
-    { key: "DSTNXa_TemplateID", val: configData.dstnXa },
-    { key: "DSTNTT_TemplateID", val: configData.dstnTt },
-    { key: "Logo_FileID", val: configData.logoFileId },
-    { key: "ExportFolderID", val: configData.exportFolder },
-    { key: "NamHienTai", val: configData.namHienTai }
-  ];
+  var updated = { donXinHoc: false, danhSachLop: false, exportFolder: false, namHienTai: false };
 
-  keysToUpdate.forEach(function(item) {
-    var found = false;
-    for (var i = 1; i < data.length; i++) {
-      if (data[i][0] === item.key) {
-        sheetConfig.getRange(i + 1, 2).setValue(item.val);
-        found = true;
-        break;
-      }
-    }
-    if (!found) {
-      sheetConfig.appendRow([item.key, item.val]);
-      // refresh data array for next iterations (though we only append new keys)
-      data.push([item.key, item.val]);
-    }
-  });
+  for (var i = 1; i < data.length; i++) {
+    if (data[i][0] === "DonXinHoc_TemplateID") { sheetConfig.getRange(i+1, 2).setValue(configData.donXinHoc); updated.donXinHoc = true; }
+    if (data[i][0] === "DanhSachLop_TemplateID") { sheetConfig.getRange(i+1, 2).setValue(configData.danhSachLop); updated.danhSachLop = true; }
+    if (data[i][0] === "ExportFolderID") { sheetConfig.getRange(i+1, 2).setValue(configData.exportFolder); updated.exportFolder = true; }
+    if (data[i][0] === "NamHienTai") { sheetConfig.getRange(i+1, 2).setValue(configData.namHienTai); updated.namHienTai = true; }
+  }
 
-  return { success: true, message: "Cập nhật cấu hình thành công!" };
+  if (!updated.donXinHoc) sheetConfig.appendRow(["DonXinHoc_TemplateID", configData.donXinHoc]);
+  if (!updated.danhSachLop) sheetConfig.appendRow(["DanhSachLop_TemplateID", configData.danhSachLop]);
+  if (!updated.exportFolder) sheetConfig.appendRow(["ExportFolderID", configData.exportFolder]);
+  if (!updated.namHienTai) sheetConfig.appendRow(["NamHienTai", configData.namHienTai]);
+
+  return { success: true, message: "Đã lưu cấu hình!" };
 }
 
 function getCourses(credentials) {
@@ -420,79 +398,6 @@ function approveCourse(rowIndex, credentials) {
  * QUẢN LÝ HỌC VIÊN (STUDENTS MANAGEMENT)
  * ======================================================================= */
 
-
-
-function batchImportStudents(studentsArray, credentials) {
-  var userInfo = verifySession(credentials);
-  if (!userInfo || userInfo.role !== 'GiaoVien') return { success: false, message: "Không có quyền!" };
-
-  var sheet = getDbSpreadsheet().getSheetByName("HocVien");
-  if (!sheet) return { success: false, message: "Không tìm thấy sheet 'HocVien'" };
-
-  var successCount = 0;
-  var errors = [];
-
-  for (var i = 0; i < studentsArray.length; i++) {
-    var s = studentsArray[i];
-    var errorMsg = _validateStudent(s, sheet, false, null);
-
-    if (errorMsg) {
-      errors.push("Dòng " + (i + 1) + " (" + s.fullName + "): " + errorMsg);
-    } else {
-      sheet.appendRow(_mapStudentToArray(s, false));
-      successCount++;
-    }
-  }
-
-  var finalMsg = "Import thành công: " + successCount + " học viên.";
-  var success = true;
-  if (errors.length > 0) {
-    finalMsg += "\nLỗi (" + errors.length + " dòng không được import):\n" + errors.join("\n");
-    success = successCount > 0 ? true : false; // Partial success vs total failure
-  }
-
-  return { success: success, message: finalMsg };
-}
-
-function _validateStudent(studentData, sheet, isUpdate, currentRowIndex) {
-  // 1. Check Age (Tính chính xác Ngày/Tháng/Năm)
-  if (!studentData.dob) return "Vui lòng nhập ngày sinh.";
-  var dobDate = new Date(studentData.dob);
-  var today = new Date();
-  var age = today.getFullYear() - dobDate.getFullYear();
-  var m = today.getMonth() - dobDate.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < dobDate.getDate())) {
-    age--;
-  }
-
-  var gender = (studentData.gender || "").toLowerCase().trim();
-  if (gender === "nam" || gender === "năm") { // Handle potential typos
-    if (age < 15 || age > 60) return "Không đúng tuổi theo học (Nam: 15-60). Tuổi hiện tại: " + age;
-  } else if (gender === "nữ" || gender === "nu") {
-    if (age < 15 || age > 55) return "Không đúng tuổi theo học (Nữ: 15-55). Tuổi hiện tại: " + age;
-  } else {
-    return "Vui lòng chọn giới tính hợp lệ (Nam/Nữ).";
-  }
-
-  // 2. Check Duplicates (CCCD trên toàn bộ dữ liệu trung tâm)
-  var cccd = (studentData.cccd || "").toString().trim();
-  if (!cccd) return "Vui lòng nhập số CCCD/CMND.";
-
-  var data = sheet.getDataRange().getValues();
-  for (var i = 1; i < data.length; i++) {
-    // Nếu đang cập nhật, bỏ qua dòng hiện tại
-    if (isUpdate && (i + 1) === currentRowIndex) continue;
-
-    var existingCccd = (data[i][4] || "").toString().trim(); // Cột E (index 4) là CCCD
-    if (existingCccd === cccd) {
-      var courseId = data[i][0]; // Cột A là CourseID
-      return "Người học này đã đăng ký học nghề (Trùng CCCD: " + cccd + " ở lớp " + courseId + ").";
-    }
-  }
-
-  return null; // No errors
-}
-
 // Tạo mảng dữ liệu Học viên theo đúng thứ tự cột
 function _mapStudentToArray(s, isUpdate) {
   // Trật tự các trường phải khớp với schema trong sheet "HocVien"
@@ -512,9 +417,6 @@ function registerStudent(studentData) {
   var sheet = getDbSpreadsheet().getSheetByName("HocVien");
   if (!sheet) return { success: false, message: "Không tìm thấy sheet 'HocVien'" };
 
-  var errorMsg = _validateStudent(studentData, sheet, false, null);
-  if (errorMsg) return { success: false, message: errorMsg };
-
   sheet.appendRow(_mapStudentToArray(studentData, false));
   return { success: true, message: "Đăng ký thành công!" };
 }
@@ -531,7 +433,6 @@ function getStudentsByCourse(courseId, credentials) {
   for (var i = 1; i < data.length; i++) {
     if (data[i][0] === courseId) {
       students.push({
-        rowIndex: i + 1,
         courseId: data[i][0], fullName: data[i][1], dob: data[i][2], gender: data[i][3],
         cccd: data[i][4], ngayCap: data[i][5], noiCap: data[i][6],
         phone: data[i][7], email: data[i][8], doiTuong: data[i][9],
@@ -541,7 +442,7 @@ function getStudentsByCourse(courseId, credentials) {
         thuongTru: data[i][19], tamTru: data[i][20],
         tenCha: data[i][21], ngheCha: data[i][22], tenMe: data[i][23], ngheMe: data[i][24],
         tenVoChong: data[i][25], ngheVoChong: data[i][26],
-        createdAt: data[i][27]
+        rowIndex: i + 1
       });
     }
   }
@@ -559,10 +460,6 @@ function updateStudent(rowIndex, studentData, credentials) {
   var userInfo = verifySession(credentials);
   if (!userInfo || userInfo.role !== 'GiaoVien') return { success: false, message: "Không có quyền!" };
   var sheet = getDbSpreadsheet().getSheetByName("HocVien");
-
-  var errorMsg = _validateStudent(studentData, sheet, true, rowIndex);
-  if (errorMsg) return { success: false, message: errorMsg };
-
   var arr = _mapStudentToArray(studentData, true);
   sheet.getRange(rowIndex, 1, 1, arr.length).setValues([arr]);
   return { success: true, message: "Đã cập nhật học viên!" };
@@ -596,54 +493,27 @@ function generateDocument(docType, courseId, credentials) {
   }
 
   if (!templateId || !destFolderId) {
-    return { success: false, message: "Chưa cấu hình ID template hoặc thư mục xuất trong sheet CauHinh cho " + docType + "." };
+    return { success: false, message: "Chưa cấu hình ID template hoặc thư mục xuất trong sheet CauHinh." };
   }
 
   try {
     var templateFile = DriveApp.getFileById(templateId);
     var destFolder = DriveApp.getFolderById(destFolderId);
     var newFile = templateFile.makeCopy(docType + " - " + courseId, destFolder);
-    newFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
 
-    var fileMimeType = newFile.getMimeType();
+    var doc = DocumentApp.openById(newFile.getId());
+    var body = doc.getBody();
 
-    // Nếu là Google Docs
-    if (fileMimeType === MimeType.GOOGLE_DOCS) {
-      var doc = DocumentApp.openById(newFile.getId());
-      var body = doc.getBody();
+    var courses = getCourses({role: 'Admin'}); // Lấy tất cả để filter
+    var courseInfo = courses.filter(function(c) { return c.id === courseId; })[0];
 
-      var courses = getCourses({role: 'Admin'});
-      var courseInfo = courses.filter(function(c) { return c.id === courseId; })[0];
-
-      if (courseInfo) {
-        body.replaceText("{{TEN_KHOA_HOC}}", courseInfo.name || "");
-        body.replaceText("{{NGAY_KHAI_GIANG}}", courseInfo.start ? Utilities.formatDate(new Date(courseInfo.start), Session.getScriptTimeZone(), "dd/MM/yyyy") : "");
-        body.replaceText("{{GIAO_VIEN}}", courseInfo.teacher || "");
-      }
-
-      var students = getStudentsByCourse(courseId, credentials);
-      if (students && students.length > 0) {
-          var s = students[0];
-          body.replaceText("{{TEN_HOC_VIEN}}", s.fullName || "");
-          body.replaceText("{{NGAY_SINH}}", s.dob ? Utilities.formatDate(new Date(s.dob), Session.getScriptTimeZone(), "dd/MM/yyyy") : "");
-          body.replaceText("{{GIOI_TINH}}", s.gender || "");
-          body.replaceText("{{CCCD}}", s.cccd || "");
-          body.replaceText("{{NGAY_CAP}}", s.ngayCap ? Utilities.formatDate(new Date(s.ngayCap), Session.getScriptTimeZone(), "dd/MM/yyyy") : "");
-          body.replaceText("{{NOI_CAP}}", s.noiCap || "");
-          body.replaceText("{{QUE_QUAN}}", s.queQuan || "");
-          body.replaceText("{{NOI_SINH}}", s.noiSinh || "");
-          body.replaceText("{{CHO_O_HIEN_TAI}}", s.thuongTru || s.tamTru || "");
-          body.replaceText("{{SDT}}", s.phone || "");
-          body.replaceText("{{TRINH_DO}}", s.trinhDo || "");
-      }
-      doc.saveAndClose();
-    }
-    // Nếu là Google Sheets (cho DSTN)
-    else if (fileMimeType === MimeType.GOOGLE_SHEETS) {
-       // Chúng ta có thể thêm logic điền dữ liệu vào sheet ở đây nếu cần sau này,
-       // hiện tại file excel được copy ra thư mục đích thành công là đủ.
+    if (courseInfo) {
+      body.replaceText("{{TEN_KHOA_HOC}}", courseInfo.name || "");
+      body.replaceText("{{NGAY_KHAI_GIANG}}", courseInfo.start ? Utilities.formatDate(new Date(courseInfo.start), Session.getScriptTimeZone(), "dd/MM/yyyy") : "");
+      body.replaceText("{{GIAO_VIEN}}", courseInfo.teacher || "");
     }
 
+    doc.saveAndClose();
     return { success: true, url: newFile.getUrl(), message: "Xuất hồ sơ thành công!" };
 
   } catch (e) {

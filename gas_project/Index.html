@@ -47,11 +47,11 @@
         <div id="loginAlert" class="alert alert-danger hidden" role="alert"></div>
         <div class="mb-3">
           <label for="username" class="form-label">Tên đăng nhập</label>
-          <input type="text" class="form-control" id="username" onkeypress="if(event.key === 'Enter') doLogin()">
+          <input type="text" class="form-control" id="username">
         </div>
         <div class="mb-3">
           <label for="password" class="form-label">Mật khẩu</label>
-          <input type="password" class="form-control" id="password" onkeypress="if(event.key === 'Enter') doLogin()">
+          <input type="password" class="form-control" id="password">
         </div>
         <button class="btn btn-primary w-100" onclick="doLogin()">Đăng nhập</button>
       </div>
@@ -276,45 +276,29 @@
 
       </div>
 
-            <!-- TAB: CẤU HÌNH (Admin) -->
+      <!-- TAB: CẤU HÌNH (Admin) -->
       <div id="tab-config" class="tab-pane hidden">
-        <div class="card shadow-sm" style="max-width: 800px;">
-          <div class="card-header bg-white fw-bold">Cấu hình Hệ thống (ID Templates & Thư mục)</div>
+        <div class="card shadow-sm" style="max-width: 600px;">
+          <div class="card-header bg-white fw-bold">Cấu hình Hệ thống</div>
           <div class="card-body">
             <div id="cfgAlert" class="alert hidden py-2 small"></div>
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label small fw-bold">Google Doc Template ID: Đơn xin học nghề</label>
-                <input type="text" id="cfg_donxinhoc" class="form-control form-control-sm">
-              </div>
-              <div class="col-md-6">
-                <label class="form-label small fw-bold">Google Doc Template ID: Danh sách lớp</label>
-                <input type="text" id="cfg_danhsachlop" class="form-control form-control-sm">
-              </div>
-              <div class="col-md-6">
-                <label class="form-label small fw-bold">Excel Template ID: Danh sách trích ngang (xã)</label>
-                <input type="text" id="cfg_dstn_xa" class="form-control form-control-sm">
-              </div>
-              <div class="col-md-6">
-                <label class="form-label small fw-bold">Excel Template ID: Danh sách trích ngang (Trung tâm)</label>
-                <input type="text" id="cfg_dstn_tt" class="form-control form-control-sm">
-              </div>
-              <div class="col-md-6">
-                <label class="form-label small fw-bold">File ID: Logo TT KV (Hình ảnh .png)</label>
-                <input type="text" id="cfg_logo_fileid" class="form-control form-control-sm">
-              </div>
-              <div class="col-md-6">
-                <label class="form-label small fw-bold">Thư mục xuất hồ sơ (Folder ID)</label>
-                <input type="text" id="cfg_export" class="form-control form-control-sm">
-              </div>
-              <div class="col-md-6">
-                <label class="form-label small fw-bold">Năm học hiện tại (VD: 2024)</label>
-                <input type="text" id="cfg_nam" class="form-control form-control-sm">
-              </div>
+            <div class="mb-2">
+              <label class="form-label small fw-bold">ID Google Docs - Đơn xin học mẫu</label>
+              <input type="text" id="cfg_donxinhoc" class="form-control form-control-sm">
             </div>
-            <div class="text-end mt-3">
-              <button class="btn btn-primary" onclick="saveConfigData()"><i class="bi bi-save"></i> Lưu cấu hình</button>
+            <div class="mb-2">
+              <label class="form-label small fw-bold">ID Google Docs - Danh sách lớp mẫu</label>
+              <input type="text" id="cfg_danhsachlop" class="form-control form-control-sm">
             </div>
+            <div class="mb-3">
+              <label class="form-label small fw-bold">ID Thư mục xuất file (Export Folder)</label>
+              <input type="text" id="cfg_export" class="form-control form-control-sm">
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-bold">Năm Đào Tạo mặc định</label>
+              <input type="number" id="cfg_nam" class="form-control form-control-sm" placeholder="VD: 2024">
+            </div>
+            <button class="btn btn-sm btn-primary" onclick="saveConfigData()">Lưu Cấu hình</button>
           </div>
         </div>
       </div>
@@ -337,7 +321,7 @@
                 <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#students">Học viên</button>
               </li>
               <li class="nav-item">
-                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#docs">Hồ sơ & QR</button>
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#docs" onclick="setTimeout(generateQR, 300)">Hồ sơ & QR</button>
               </li>
             </ul>
 
@@ -346,14 +330,8 @@
               <div class="tab-pane fade show active" id="students">
                 <div class="d-flex justify-content-between mb-2">
                   <button class="btn btn-sm btn-info text-white" onclick="loadStudents()"><i class="bi bi-arrow-clockwise"></i> Tải danh sách</button>
-                  <div id="studentActionsContainer">
-                    <button class="btn btn-sm btn-outline-success me-1" onclick="downloadStudentTemplate()"><i class="bi bi-download"></i> Tải file mẫu</button>
-                    <label class="btn btn-sm btn-success me-1 mb-0" for="importStudentFile"><i class="bi bi-file-earmark-excel"></i> Nhập từ Excel</label>
-                    <input type="file" id="importStudentFile" accept=".xlsx, .xls" class="hidden">
-                    <button class="btn btn-sm btn-primary" id="btnAddStudent" onclick="openStudentForm()"><i class="bi bi-person-plus"></i> Thêm HV thủ công</button>
-                  </div>
+                  <button class="btn btn-sm btn-primary" id="btnAddStudent" onclick="openStudentForm()"><i class="bi bi-person-plus"></i> Thêm HV thủ công</button>
                 </div>
-                <div id="studentImportAlert" class="alert alert-info hidden py-2 small" role="alert"></div>
                 <div class="table-responsive">
                   <table class="table table-sm table-bordered align-middle" id="studentsTable">
                     <thead class="table-light">
@@ -431,18 +409,14 @@
                   <div class="col-md-6 border-end">
                     <h6>1. Đăng ký trực tuyến (QR Code)</h6>
                     <p class="small text-muted mb-2">Học viên quét mã QR này để tự điền thông tin đăng ký vào lớp.</p>
-
+                    <button class="btn btn-sm btn-primary mb-2" onclick="generateQR()">Tạo / Xem mã QR</button>
                     <div id="qrCodeContainer"></div>
                   </div>
                   <div class="col-md-6 ps-4">
                     <h6>2. Xuất Biểu Mẫu / Hồ Sơ</h6>
                     <p class="small text-muted mb-2">Hệ thống sẽ tự động điền dữ liệu vào form Google Docs mẫu.</p>
-
                     <button class="btn btn-sm btn-outline-secondary mb-2" onclick="exportDoc('DonXinHoc')"><i class="bi bi-file-earmark-word"></i> Xuất Đơn xin học</button><br>
-                    <button class="btn btn-sm btn-outline-secondary mb-2" onclick="exportDoc('DanhSachLop')"><i class="bi bi-file-earmark-spreadsheet"></i> Xuất Danh sách lớp</button><br>
-                    <button class="btn btn-sm btn-outline-secondary mb-2" onclick="exportDoc('DSTNXa')"><i class="bi bi-file-earmark-spreadsheet"></i> Xuất DSTN (xã)</button><br>
-                    <button class="btn btn-sm btn-outline-secondary mb-2" onclick="exportDoc('DSTNTT')"><i class="bi bi-file-earmark-spreadsheet"></i> Xuất DSTN (TT)</button>
-
+                    <button class="btn btn-sm btn-outline-secondary mb-2" onclick="exportDoc('DanhSachLop')"><i class="bi bi-file-earmark-spreadsheet"></i> Xuất Danh sách lớp</button>
                     <div id="exportStatus" class="mt-2 text-success fw-bold"></div>
                   </div>
                 </div>
@@ -777,112 +751,6 @@
         google.script.run.withSuccessHandler(res => { loadStudents(); }).deleteStudent(rowIndex, currentUser);
       }
 
-
-      // --- IMPORT / EXPORT STUDENTS ---
-      function downloadStudentTemplate() {
-        const headers = ["Họ và tên", "Ngày sinh (MM/DD/YYYY)", "Giới tính", "CCCD", "Ngày cấp", "Nơi cấp", "Số điện thoại", "Email", "Đối tượng", "Dân tộc", "Tôn giáo", "Trình độ", "Trình độ văn hóa", "Quê quán", "Nơi sinh", "Huyện thường trú", "Xã thường trú", "Thôn thường trú", "Thường trú (Chi tiết)", "Tạm trú", "Tên cha", "Nghề cha", "Tên mẹ", "Nghề mẹ", "Tên vợ/chồng", "Nghề vợ/chồng"];
-        const ws = XLSX.utils.aoa_to_sheet([headers]);
-
-        // Auto-size columns slightly
-        ws['!cols'] = headers.map(() => ({ wch: 15 }));
-
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "HocVien_Mau");
-        XLSX.writeFile(wb, "Template_NhapHocVien.xlsx");
-      }
-
-      document.addEventListener('DOMContentLoaded', function () {
-        var importStudentBtn = document.getElementById('importStudentFile');
-        if (importStudentBtn) {
-          importStudentBtn.addEventListener('change', function(e) {
-            var file = e.target.files[0];
-            if (!file) return;
-
-            var alertBox = document.getElementById('studentImportAlert');
-            alertBox.className = "alert alert-info py-2 small";
-            alertBox.innerText = "Đang đọc file Excel...";
-            alertBox.classList.remove('hidden');
-
-            var reader = new FileReader();
-            reader.onload = function(evt) {
-              var data = new Uint8Array(evt.target.result);
-              var workbook = XLSX.read(data, { type: 'array' });
-              var firstSheetName = workbook.SheetNames[0];
-              var worksheet = workbook.Sheets[firstSheetName];
-              var json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-
-              if (json.length > 1) {
-                // Map array rows to student object payload
-                var payload = [];
-                for (var i = 1; i < json.length; i++) {
-                  var row = json[i];
-                  if (!row[0]) continue; // Skip empty rows (no name)
-
-                  // Simple Date parsing (Excel returns serial date or string depending on options. Sheet_to_json with raw options can handle it, but let's assume it's a string for now or use cellDates if needed). We will pass it as string and let server or user format handle it. If it's a number (serial), sheetjs has utils.
-                  var dob = row[1];
-                  if (typeof dob === 'number') {
-                     dob = new Date(Math.round((dob - 25569) * 864e5)).toISOString().split('T')[0];
-                  }
-
-                  var ngayCap = row[4];
-                  if (typeof ngayCap === 'number') {
-                     ngayCap = new Date(Math.round((ngayCap - 25569) * 864e5)).toISOString().split('T')[0];
-                  }
-
-                  payload.push({
-                    courseId: currentCourseId, // Attached to current modal course
-                    fullName: row[0] || "",
-                    dob: dob || "",
-                    gender: row[2] || "",
-                    cccd: row[3] || "",
-                    ngayCap: ngayCap || "",
-                    noiCap: row[5] || "",
-                    phone: row[6] || "",
-                    email: row[7] || "",
-                    doiTuong: row[8] || "",
-                    danToc: row[9] || "",
-                    tonGiao: row[10] || "",
-                    trinhDo: row[11] || "",
-                    trinhDoVanHoa: row[12] || "",
-                    queQuan: row[13] || "",
-                    noiSinh: row[14] || "",
-                    huyenThuongTru: row[15] || "",
-                    xaThuongTru: row[16] || "",
-                    thonThuongTru: row[17] || "",
-                    thuongTru: row[18] || "",
-                    tamTru: row[19] || "",
-                    tenCha: row[20] || "",
-                    ngheCha: row[21] || "",
-                    tenMe: row[22] || "",
-                    ngheMe: row[23] || "",
-                    tenVoChong: row[24] || "",
-                    ngheVoChong: row[25] || ""
-                  });
-                }
-
-                if (payload.length > 0) {
-                  alertBox.innerText = `Đang import ${payload.length} học viên. Vui lòng chờ...`;
-                  google.script.run.withSuccessHandler(res => {
-                    alertBox.className = res.success ? "alert alert-success py-2 small" : "alert alert-warning py-2 small";
-                    // res.message could contain multi-line error summaries
-                    alertBox.innerHTML = res.message.replace(/\n/g, '<br>');
-                    loadStudents();
-                  }).batchImportStudents(payload, currentUser);
-                } else {
-                  alertBox.className = "alert alert-danger py-2 small";
-                  alertBox.innerText = "Không tìm thấy dữ liệu hợp lệ trong file!";
-                }
-              } else {
-                alertBox.className = "alert alert-danger py-2 small";
-                alertBox.innerText = "File rỗng hoặc không đúng định dạng!";
-              }
-            };
-            reader.readAsArrayBuffer(file);
-            importStudentBtn.value = "";
-          });
-        }
-      });
-
       // --- QR & XUẤT ---
       function generateQR() {
         let container = document.getElementById('qrCodeContainer');
@@ -955,9 +823,6 @@
         google.script.run.withSuccessHandler(config => {
           document.getElementById('cfg_donxinhoc').value = config.donXinHoc || "";
           document.getElementById('cfg_danhsachlop').value = config.danhSachLop || "";
-          document.getElementById('cfg_dstn_xa') ? document.getElementById('cfg_dstn_xa').value = config.dstnXa || "" : null;
-          document.getElementById('cfg_dstn_tt') ? document.getElementById('cfg_dstn_tt').value = config.dstnTt || "" : null;
-          document.getElementById('cfg_logo_fileid') ? document.getElementById('cfg_logo_fileid').value = config.logoFileId || "" : null;
           document.getElementById('cfg_export').value = config.exportFolder || "";
           document.getElementById('cfg_nam').value = config.namHienTai || "";
         }).getConfig(currentUser);
@@ -967,9 +832,6 @@
         let data = {
           donXinHoc: document.getElementById('cfg_donxinhoc').value.trim(),
           danhSachLop: document.getElementById('cfg_danhsachlop').value.trim(),
-          dstnXa: document.getElementById('cfg_dstn_xa') ? document.getElementById('cfg_dstn_xa').value.trim() : "",
-          dstnTt: document.getElementById('cfg_dstn_tt') ? document.getElementById('cfg_dstn_tt').value.trim() : "",
-          logoFileId: document.getElementById('cfg_logo_fileid') ? document.getElementById('cfg_logo_fileid').value.trim() : "",
           exportFolder: document.getElementById('cfg_export').value.trim(),
           namHienTai: document.getElementById('cfg_nam').value.trim()
         };
@@ -1178,15 +1040,6 @@ function editCategory(sheetName, rowIndex, safeOldVal) {
         }
       });
 
-
-      document.addEventListener('DOMContentLoaded', function () {
-        var docsTab = document.querySelector('button[data-bs-target="#docs"]');
-        if (docsTab) {
-          docsTab.addEventListener('shown.bs.tab', function (e) {
-            generateQR();
-          });
-        }
-      });
     </script>
 
     <div style="position: fixed; bottom: 0; left: 0; width: 100%; text-align: center; padding: 10px; color: #6c757d; font-size: 0.85rem; background-color: #f1f4f6; border-top: 1px solid #dee2e6; z-index: 1000;">
