@@ -421,9 +421,7 @@
                   </div>
                 </div>
 
-        <div style="margin-bottom: 20px;">
-            <img src="https://i.imgur.com/gO0tG2F.png" alt="Header Banner" style="width: 100%; height: auto; border-radius: 5px; box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);">
-        </div>
+
 
               </div>
 
@@ -563,7 +561,8 @@
 
       // Chống XSS đơn giản
       function escapeHtml(unsafe) {
-        return (unsafe || "").toString()
+        if (unsafe === null || unsafe === undefined) return "";
+        return String(unsafe)
              .replace(/&/g, "&amp;")
              .replace(/</g, "&lt;")
              .replace(/>/g, "&gt;")
