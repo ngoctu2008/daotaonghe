@@ -1,0 +1,65 @@
+<script>
+  // Chạy các script sau khi DOM đã load xong
+  document.addEventListener("DOMContentLoaded", function() {
+
+    // 1. Khởi tạo thư viện AOS (Animate On Scroll)
+    AOS.init({
+      duration: 800,      // Thời gian chạy hiệu ứng (ms)
+      easing: 'ease-in-out', // Kiểu gia tốc hiệu ứng
+      once: true,         // Hiệu ứng chỉ chạy 1 lần khi cuộn tới
+      offset: 100         // Khoảng cách cuộn (px) trước khi kích hoạt
+    });
+
+    // 2. Logic cho hiệu ứng Number Counter (Đếm số tự động)
+    const counters = document.querySelectorAll('.counter-value');
+    const speed = 200; // Tốc độ đếm (số càng nhỏ đếm càng nhanh)
+
+    // Sử dụng IntersectionObserver để chỉ đếm khi cuộn tới phần Thống kê
+    const counterObserver = new IntersectionObserver(function(entries, observer) {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const counter = entry.target;
+
+          const updateCount = () => {
+            // Lấy giá trị mục tiêu (bỏ đi các ký tự như '+', '%' nếu có)
+            const target = +counter.getAttribute('data-target');
+            const suffix = counter.getAttribute('data-suffix') || '';
+            const count = +counter.innerText.replace(/\D/g, ''); // Lấy số hiện tại
+
+            // Tính toán bước nhảy
+            const inc = target / speed;
+
+            // Nếu số hiện tại nhỏ hơn mục tiêu, tiếp tục tăng
+            if (count < target) {
+              counter.innerText = Math.ceil(count + inc) + suffix;
+              setTimeout(updateCount, 15);
+            } else {
+              counter.innerText = target + suffix; // Chốt số cuối cùng
+            }
+          };
+
+          updateCount();
+          observer.unobserve(counter); // Dừng theo dõi sau khi đếm xong
+        }
+      });
+    }, { threshold: 0.5 }); // Kích hoạt khi 50% khối hiển thị trên màn hình
+
+    counters.forEach(counter => {
+      counterObserver.observe(counter);
+    });
+
+    // 3. Đóng Navbar collapse tự động khi click vào link trên màn hình di động
+    const navLinks = document.querySelectorAll('.nav-link');
+    const navbarCollapse = document.getElementById('navbarNav');
+
+    navLinks.forEach(link => {
+      link.addEventListener('click', () => {
+        if (navbarCollapse.classList.contains('show')) {
+          // Kích hoạt click vào nút toggler để đóng menu
+          document.querySelector('.navbar-toggler').click();
+        }
+      });
+    });
+
+  });
+</script>

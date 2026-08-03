@@ -1,0 +1,329 @@
+<style>
+  /* ==========================================================
+     Biến CSS toàn cục (Màu chủ đạo, Phông chữ)
+     ========================================================== */
+  :root {
+    --primary-blue: #0d6efd; /* Màu xanh primary Bootstrap */
+    --dark-blue: #004085;    /* Màu xanh đậm giáo dục */
+    --light-bg: #f8f9fa;
+  }
+
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #333;
+    /* Bật tính năng cuộn mượt mà toàn trang */
+    scroll-behavior: smooth;
+  }
+
+  /* ==========================================================
+     Header & Navigation
+     ========================================================== */
+  .navbar {
+    background-color: white;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  }
+  .navbar-brand {
+    color: var(--dark-blue) !important;
+    font-weight: 700;
+    font-size: 1.5rem;
+  }
+  .nav-link {
+    font-weight: 500;
+    color: #555 !important;
+    transition: color 0.3s ease;
+  }
+  .nav-link:hover, .nav-link.active {
+    color: var(--primary-blue) !important;
+  }
+
+  /* ==========================================================
+     Hero Section (Jumbotron)
+     ========================================================== */
+  .hero-section {
+    position: relative;
+    /* Ghi chú thay đổi: Đổi link ảnh URL dưới đây thành ảnh thật của bạn */
+    background: url('https://images.unsplash.com/photo-1581092160562-40aa08e78837?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80') no-repeat center center;
+    background-size: cover;
+    height: 80vh;
+    min-height: 500px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: white;
+  }
+
+  /* Lớp phủ mờ màu tối để chữ nổi bật hơn */
+  .hero-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 32, 96, 0.6); /* Phủ mờ xanh đen */
+    z-index: 1;
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 2;
+    padding: 20px;
+  }
+
+  .hero-title {
+    font-size: 3.5rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    margin-bottom: 20px;
+  }
+
+  .hero-subtitle {
+    font-size: 1.8rem;
+    font-weight: 300;
+    margin-bottom: 40px;
+  }
+
+  .btn-hero {
+    background-color: var(--primary-blue);
+    color: white;
+    padding: 12px 30px;
+    font-size: 1.2rem;
+    border-radius: 50px;
+    font-weight: 600;
+    transition: all 0.3s;
+    border: none;
+    box-shadow: 0 4px 15px rgba(13, 110, 253, 0.4);
+  }
+
+  .btn-hero:hover {
+    background-color: var(--dark-blue);
+    transform: translateY(-3px);
+    color: white;
+  }
+
+  /* ==========================================================
+     Các Section Chung
+     ========================================================== */
+  .section-padding {
+    padding: 80px 0;
+  }
+
+  .section-title {
+    color: var(--dark-blue);
+    font-weight: 700;
+    margin-bottom: 1rem;
+    position: relative;
+    padding-bottom: 15px;
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  .section-title::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 4px;
+    background-color: var(--primary-blue);
+    border-radius: 2px;
+  }
+
+  .bg-light-gray {
+    background-color: var(--light-bg);
+  }
+
+  /* ==========================================================
+     Section 1: Pháp lý & Giới thiệu
+     ========================================================== */
+  .check-list {
+    list-style: none;
+    padding-left: 0;
+  }
+  .check-list li {
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: flex-start;
+  }
+  .check-list li i {
+    color: var(--primary-blue);
+    margin-top: 5px;
+    margin-right: 15px;
+    font-size: 1.2rem;
+  }
+
+  /* ==========================================================
+     Section 2: Đào tạo (Cards)
+     ========================================================== */
+  .course-card {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    height: 100%;
+  }
+
+  .course-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+  }
+
+  .course-icon-wrap {
+    height: 80px;
+    width: 80px;
+    background-color: rgba(13, 110, 253, 0.1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+  }
+
+  .course-icon-wrap i {
+    font-size: 2.5rem;
+    color: var(--primary-blue);
+  }
+
+  .course-card .card-title {
+    color: var(--dark-blue);
+    font-weight: 700;
+  }
+
+  .practice-badge {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background-color: #ffc107;
+    color: #000;
+    font-weight: 600;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+  }
+
+  /* ==========================================================
+     Section 3: Cơ sở vật chất (Gallery & Tech block)
+     ========================================================== */
+  .tech-block {
+    background: linear-gradient(135deg, var(--dark-blue), var(--primary-blue));
+    color: white;
+    padding: 40px;
+    border-radius: 15px;
+    margin-top: 30px;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+  }
+
+  .gallery-img {
+    width: 100%;
+    height: 250px;
+    object-fit: cover;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    transition: transform 0.3s;
+  }
+
+  .gallery-img:hover {
+    transform: scale(1.03);
+  }
+
+  /* ==========================================================
+     Section 4: Nhân sự (Counter) & Đối tác
+     ========================================================== */
+  .counter-box {
+    text-align: center;
+    padding: 30px 20px;
+    border-radius: 10px;
+    background-color: white;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+  }
+
+  .counter-value {
+    font-size: 3rem;
+    font-weight: 700;
+    color: var(--primary-blue);
+    margin-bottom: 10px;
+  }
+
+  .counter-label {
+    font-size: 1.1rem;
+    color: #666;
+    font-weight: 500;
+  }
+
+  .partner-logo {
+    max-width: 150px;
+    opacity: 0.7;
+    transition: opacity 0.3s, transform 0.3s;
+    margin: 15px;
+  }
+
+  .partner-logo:hover {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+
+  .partner-marquee {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 30px;
+  }
+
+  /* ==========================================================
+     Footer
+     ========================================================== */
+  .footer {
+    background-color: #212529;
+    color: #ccc;
+    padding: 50px 0 20px;
+  }
+
+  .footer-heading {
+    color: white;
+    font-weight: 600;
+    margin-bottom: 20px;
+  }
+
+  .footer-contact li {
+    margin-bottom: 15px;
+  }
+
+  .footer-contact i {
+    width: 25px;
+    color: var(--primary-blue);
+  }
+
+  .map-container iframe {
+    width: 100%;
+    height: 250px;
+    border: 0;
+    border-radius: 10px;
+  }
+
+  .footer-bottom {
+    border-top: 1px solid #444;
+    padding-top: 20px;
+    margin-top: 30px;
+    text-align: center;
+    font-size: 0.9rem;
+  }
+
+  /* ==========================================================
+     Responsive Adjustments
+     ========================================================== */
+  @media (max-width: 768px) {
+    .hero-title {
+      font-size: 2.2rem;
+    }
+    .hero-subtitle {
+      font-size: 1.2rem;
+    }
+    .section-padding {
+      padding: 50px 0;
+    }
+  }
+</style>

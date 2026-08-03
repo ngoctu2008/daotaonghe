@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <!-- Thẻ này được Google Apps Script tự động thêm, nhưng vẫn để để preview -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hồ sơ năng lực - TT GDNN-GDTX Đăk Tô</title>
+
+  <!-- 1. Bootstrap 5 CSS CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- 2. FontAwesome CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+
+  <!-- 3. AOS Animation CSS CDN -->
+  <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+
+  <!-- 4. Nhúng CSS tùy chỉnh từ Google Apps Script -->
+  <?!= include('CSS'); ?>
+</head>
+<body>
+
+  <!-- ==========================================
+       HEADER & NAVIGATION (Thanh điều hướng cố định)
+       ========================================== -->
+  <nav class="navbar navbar-expand-lg sticky-top">
+    <div class="container">
+      <a class="navbar-brand" href="#">
+        <i class="fa-solid fa-graduation-cap me-2 text-primary"></i>
+        TT GDNN-GDTX Đăk Tô
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+        <ul class="navbar-nav">
+          <li class="nav-item"><a class="nav-link" href="#gioi-thieu">Giới thiệu & Pháp lý</a></li>
+          <li class="nav-item"><a class="nav-link" href="#dao-tao">Đào tạo</a></li>
+          <li class="nav-item"><a class="nav-link" href="#co-so">Cơ sở vật chất</a></li>
+          <li class="nav-item"><a class="nav-link" href="#nhan-su">Nhân sự & Đối tác</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ==========================================
+       HERO SECTION (Phần mở đầu)
+       ========================================== -->
+  <header class="hero-section">
+    <div class="hero-overlay"></div>
+    <div class="hero-content container" data-aos="fade-up">
+      <h1 class="hero-title">Hồ Sơ Năng Lực Đào Tạo Nghề</h1>
+      <p class="hero-subtitle">Nâng tầm kỹ năng - Kiến tạo tương lai</p>
+      <!-- Link anchor trỏ thẳng xuống section #dao-tao (Section 2) -->
+      <a href="#dao-tao" class="btn btn-hero">Xem Chương Trình Đào Tạo</a>
+    </div>
+  </header>
+
+  <!-- ==========================================
+       SECTION 1: GIỚI THIỆU CHUNG & PHÁP LÝ
+       ========================================== -->
+  <section id="gioi-thieu" class="section-padding">
+    <div class="container">
+      <h2 class="section-title" data-aos="fade-up">Giới thiệu chung & Pháp lý</h2>
+
+      <div class="row mt-5">
+        <!-- Cột trái: Tầm nhìn & Sứ mạng (Hardcode theo yêu cầu) -->
+        <div class="col-lg-6 mb-4" data-aos="fade-right">
+          <h4 class="text-primary mb-3"><i class="fa-solid fa-bullseye me-2"></i>Tầm nhìn & Sứ mạng</h4>
+          <p class="lead">Chúng tôi hướng tới việc trở thành trung tâm đào tạo nghề hàng đầu khu vực, cung cấp nguồn nhân lực chất lượng cao đáp ứng nhu cầu thị trường lao động hiện đại.</p>
+          <div class="alert alert-info mt-4 border-start border-primary border-4 bg-white">
+            <strong><i class="fa-solid fa-vr-cardboard me-2"></i>Tiên phong công nghệ:</strong>
+            <p class="mb-0 mt-2">Áp dụng mạnh mẽ chuyển đổi số và công nghệ giáo dục (3D/AR) vào thực hành, giúp học viên tiếp cận kỹ năng một cách trực quan, sinh động và thực tế nhất.</p>
+          </div>
+        </div>
+
+        <!-- Cột phải: Năng lực pháp lý -->
+        <div class="col-lg-6" data-aos="fade-left">
+          <h4 class="text-primary mb-3"><i class="fa-solid fa-scale-balanced me-2"></i>Năng lực pháp lý</h4>
+          <ul class="check-list mt-4">
+            <li>
+              <i class="fa-solid fa-circle-check"></i>
+              <div>
+                <strong>Quyết định thành lập:</strong><br>
+                Được thành lập theo Quyết định của UBND Tỉnh, đảm bảo tính pháp lý vững chắc.
+              </div>
+            </li>
+            <li>
+              <i class="fa-solid fa-circle-check"></i>
+              <div>
+                <strong>Giấy phép hoạt động GDNN:</strong><br>
+                Cấp bởi Sở LĐ-TB&XH, đủ điều kiện cấp chứng chỉ sơ cấp nghề toàn quốc.
+              </div>
+            </li>
+            <li>
+              <i class="fa-solid fa-circle-check"></i>
+              <div>
+                <strong>Tiêu chuẩn kiểm định:</strong><br>
+                Cơ sở vật chất và đội ngũ giáo viên đạt tiêu chuẩn kiểm định chất lượng GDNN.
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================
+       SECTION 2: CHƯƠNG TRÌNH ĐÀO TẠO (Data từ Code.gs)
+       ========================================== -->
+  <section id="dao-tao" class="section-padding bg-light-gray">
+    <div class="container">
+      <h2 class="section-title" data-aos="fade-up">Chương Trình Đào Tạo</h2>
+      <p class="text-center text-muted mb-5" data-aos="fade-up" data-aos-delay="100">Các nhóm ngành trọng điểm đáp ứng nhu cầu địa phương</p>
+
+      <div class="row g-4 justify-content-center">
+        <!-- Vòng lặp Google Apps Script để render dữ liệu Courses -->
+        <? for (var i = 0; i < courses.length; i++) { ?>
+        <div class="col-lg-4 col-md-6" data-aos="zoom-in" data-aos-delay="<?= i * 150 ?>">
+          <div class="card course-card p-4">
+            <span class="practice-badge"><?= courses[i].practiceBadge ?></span>
+            <div class="course-icon-wrap">
+              <i class="fa-solid <?= courses[i].icon ?>"></i>
+            </div>
+            <h4 class="card-title text-center mb-3"><?= courses[i].title ?></h4>
+            <div class="card-text mt-auto">
+              <p><strong><i class="fa-regular fa-clock text-primary me-2"></i>Thời gian:</strong> <?= courses[i].level ?></p>
+              <p class="mb-0"><strong><i class="fa-solid fa-award text-primary me-2"></i>Chuẩn đầu ra:</strong> <?= courses[i].outcome ?></p>
+            </div>
+          </div>
+        </div>
+        <? } ?>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================
+       SECTION 3: CƠ SỞ VẬT CHẤT & CÔNG NGHỆ
+       ========================================== -->
+  <section id="co-so" class="section-padding">
+    <div class="container">
+      <h2 class="section-title" data-aos="fade-up">Cơ Sở Vật Chất & Công Nghệ</h2>
+
+      <!-- Ghi chú thay đổi: Cập nhật link ảnh thực tế của cơ sở -->
+      <div class="row mt-5" data-aos="fade-up">
+        <div class="col-md-4">
+          <img src="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Phòng học lý thuyết" class="gallery-img shadow-sm">
+          <h5 class="text-center mt-2">Phòng học lý thuyết số hóa</h5>
+        </div>
+        <div class="col-md-4">
+          <img src="https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Xưởng thực hành Xây dựng & Điện" class="gallery-img shadow-sm">
+          <h5 class="text-center mt-2">Xưởng thực hành Xây dựng & Điện</h5>
+        </div>
+        <div class="col-md-4">
+          <img src="https://images.unsplash.com/photo-1592982537447-6f23f79ef490?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Trạm thực nghiệm Nông nghiệp" class="gallery-img shadow-sm">
+          <h5 class="text-center mt-2">Trạm thực nghiệm Nông nghiệp</h5>
+        </div>
+      </div>
+
+      <!-- Khối làm nổi bật Công nghệ 3D/AR -->
+      <div class="row justify-content-center" data-aos="flip-up">
+        <div class="col-lg-10 text-center">
+          <div class="tech-block">
+            <i class="fa-solid fa-cubes fa-3x mb-3"></i>
+            <h3>Ứng dụng Bài giảng trực quan 3D/WebAR</h3>
+            <p class="lead mb-0">Học viên được thao tác trực tiếp trên các mô hình máy móc, linh kiện điện tử 3D ảo trước khi thực hành trên thiết bị thật, giảm thiểu rủi ro và tăng cường ghi nhớ.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================
+       SECTION 4: NHÂN SỰ & ĐỐI TÁC
+       ========================================== -->
+  <section id="nhan-su" class="section-padding bg-light-gray">
+    <div class="container">
+      <h2 class="section-title" data-aos="fade-up">Nhân Sự & Quan Hệ Hợp Tác</h2>
+
+      <!-- Thống kê nhân sự (Data từ Code.gs + JS đếm số) -->
+      <div class="row mt-5 mb-5 justify-content-center">
+        <? for (var j = 0; j < stats.length; j++) { ?>
+        <div class="col-md-4 mb-4" data-aos="fade-up" data-aos-delay="<?= j * 100 ?>">
+          <div class="counter-box">
+            <!-- JS sẽ đọc data-target và data-suffix để đếm -->
+            <div class="counter-value" data-target="<?= stats[j].value ?>" data-suffix="<?= stats[j].suffix ?>">0</div>
+            <div class="counter-label"><?= stats[j].label ?></div>
+          </div>
+        </div>
+        <? } ?>
+      </div>
+
+      <!-- Đối tác (Data từ Code.gs) -->
+      <div class="mt-5" data-aos="fade-in">
+        <h4 class="text-center mb-4"><i class="fa-solid fa-handshake text-primary me-2"></i>Mạng lưới đối tác doanh nghiệp</h4>
+        <div class="alert alert-warning text-center fw-bold fs-5 mb-4 shadow-sm" style="border-left: 5px solid #ffc107;">
+          Cam kết hỗ trợ giới thiệu việc làm 100% sau khi tốt nghiệp
+        </div>
+
+        <div class="partner-marquee mt-4">
+          <? for (var k = 0; k < partners.length; k++) { ?>
+          <img src="<?= partners[k].logoUrl ?>" alt="<?= partners[k].name ?>" class="partner-logo" title="<?= partners[k].name ?>">
+          <? } ?>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================
+       FOOTER (Chân trang)
+       ========================================== -->
+  <footer class="footer">
+    <div class="container">
+      <div class="row">
+        <!-- Thông tin liên hệ -->
+        <div class="col-lg-6 mb-4">
+          <h4 class="footer-heading">TT GDNN-GDTX Đăk Tô</h4>
+          <p>Nâng tầm kỹ năng - Kiến tạo tương lai.</p>
+          <ul class="list-unstyled footer-contact mt-4">
+            <li><i class="fa-solid fa-location-dot"></i> <strong>Địa chỉ:</strong> TT. Đăk Tô, Huyện Đăk Tô, Tỉnh Kon Tum</li>
+            <li><i class="fa-solid fa-phone"></i> <strong>Điện thoại:</strong> (0260) 3xxx xxx</li>
+            <li><i class="fa-solid fa-envelope"></i> <strong>Email:</strong> contact@gdnndakto.edu.vn</li>
+            <li><i class="fa-solid fa-globe"></i> <strong>Website:</strong> www.gdnndakto.edu.vn</li>
+          </ul>
+        </div>
+
+        <!-- Google Maps -->
+        <div class="col-lg-6">
+          <h4 class="footer-heading">Bản đồ chỉ đường</h4>
+          <div class="map-container">
+            <!-- Ghi chú thay đổi: Cập nhật src iframe Google Maps của cơ quan bạn vào đây -->
+            <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15474.3164009257!2d107.82025175!3d14.6366687!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x316ea5735ce4ab5d%3A0xb3cf51d8b2d13b43!2zxJDEg2sgVMO0LCBLb24gVHVtLCBWaeG7h3QgTmFt!5e0!3m2!1svi!2s!4v1700000000000!5m2!1svi!2s" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <p class="mb-0">&copy; 2023 Trung tâm GDNN - GDTX Đăk Tô. Thiết kế & Phát triển trên Google Apps Script.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- 5. Bootstrap JS Bundle with Popper -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- 6. AOS Animation JS -->
+  <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+
+  <!-- 7. Nhúng JS tùy chỉnh từ Google Apps Script -->
+  <?!= include('JS'); ?>
+</body>
+</html>
