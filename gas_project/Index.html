@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <style>
+      body { background-color: #f1f4f6; display: flex; height: 100vh; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+      .hidden { display: none !important; }
+
+      /* Utilities */
+      .card { border: none; border-radius: 0.5rem; box-shadow: 0 0.46875rem 2.1875rem rgba(4,9,20,0.03), 0 0.9375rem 1.40625rem rgba(4,9,20,0.03); margin-bottom: 1.5rem; }
+      .card-header { background-color: white; border-bottom: 1px solid rgba(26,54,126,0.125); padding: 1rem 1.25rem; font-weight: bold; color: #495057; text-transform: uppercase; font-size: 0.85rem;}
+
+      /* Login styles */
+      #loginPage { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);}
+      .login-container { max-width: 400px; width: 100%; background: white; padding: 40px; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+
+      /* Layout styles */
+      #sidebar { width: 280px; background-color: #ffffff; display: flex; flex-direction: column; transition: 0.3s; z-index: 10; box-shadow: 7px 0 60px rgba(0,0,0,0.05); }
+      #sidebar .nav-link { color: #495057; padding: 12px 25px; font-size: 0.95rem; cursor: pointer; font-weight: 500; transition: all 0.2s;}
+      #sidebar .nav-link:hover, #sidebar .nav-link.active { color: #3f6ad8; background-color: #e0f3ff; border-right: 3px solid #3f6ad8; }
+      #sidebar .brand { padding: 25px; font-size: 24px; font-weight: bold; color: #3f6ad8; text-align: center; border-bottom: 1px solid #f1f4f6; margin-bottom: 15px; }
+      #content-area { flex-grow: 1; overflow-y: auto; padding: 30px; padding-bottom: 50px; background-color: #f1f4f6; }
+
+      .top-header { background: white; padding: 15px 30px; border-radius: 0; box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075); margin: -30px -30px 30px -30px; display: flex; justify-content: space-between; align-items: center; }
+      #qrCodeContainer { text-align: center; margin-top: 20px; }
+      .btn-primary { background-color: #3f6ad8; border-color: #3f6ad8; }
+      .table th { text-transform: uppercase; font-size: 0.8rem; color: #6c757d; border-top: none;}
+    </style>
+  </head>
+  <body>
+
+    <!-- ==============================================
+         L O G I N   P A G E
+         ============================================== -->
+    <div id="loginPage">
+      <div class="login-container">
+        <div class="text-center mb-4">
+          <? if (logoUrl) { ?>
+            <img src="<?= logoUrl ?>" alt="Logo" style="height: 80px; margin-bottom: 15px;">
+          <? } ?>
+          <h5 style="color: #3f6ad8; font-weight: bold; margin-bottom: 5px;">TRUNG TÂM GDNN – GDTX KHU VỰC ĐĂK HÀ</h5>
+          <h4 style="color: #3f6ad8; font-weight: bold;">HỆ THỐNG QUẢN LÝ ĐÀO TẠO NGHỀ</h4>
+        </div>
+        <div id="loginAlert" class="alert alert-danger hidden" role="alert"></div>
+        <div class="mb-3">
+          <label for="username" class="form-label">Tên đăng nhập</label>
+          <input type="text" class="form-control" id="username">
+        </div>
+        <div class="mb-3">
+          <label for="password" class="form-label">Mật khẩu</label>
+          <input type="password" class="form-control" id="password">
+        </div>
+        <button class="btn btn-primary w-100" onclick="doLogin()">Đăng nhập</button>
+      </div>
+    </div>
+
+    <!-- ==============================================
+         M A I N   A P P
+         ============================================== -->
+    <div id="sidebar" class="hidden">
+      <div class="brand" style="font-size: 16px; padding: 20px 10px;">HỆ THỐNG QUẢN LÝ ĐÀO TẠO NGHỀ<br><span style="font-size: 12px; font-weight: normal; color: #6c757d;">TT GDNN - GDTX ĐĂK HÀ</span></div>
+      <nav class="nav flex-column">
+        <a class="nav-link active" onclick="switchTab('tab-courses')" id="nav-courses"><i class="bi bi-journal-text me-2"></i> Khóa học</a>
+        <a class="nav-link hidden" onclick="switchTab('tab-categories')" id="nav-categories"><i class="bi bi-tags me-2"></i> Danh mục</a>
+        <a class="nav-link hidden" onclick="switchTab('tab-accounts')" id="nav-accounts"><i class="bi bi-people me-2"></i> Tài khoản</a>
+        <a class="nav-link hidden" onclick="switchTab('tab-config')" id="nav-config"><i class="bi bi-gear me-2"></i> Cấu hình</a>
+        <a class="nav-link" onclick="switchTab('tab-profile')" id="nav-profile"><i class="bi bi-person-badge me-2"></i> Đổi mật khẩu</a>
+        <a class="nav-link text-danger mt-auto" onclick="logout()"><i class="bi bi-box-arrow-left me-2"></i> Đăng xuất</a>
+      </nav>
+    </div>
+
+    <div id="content-area" class="hidden">
+      <div class="top-header">
+        <div>
+          <h5>Xin chào, <span id="displayUserName" class="text-primary fw-bold"></span></h5>
+          <span class="badge bg-secondary" id="userRoleBadge"></span>
+        </div>
+      </div>
+
+
+    <!-- MODAL: NGHỀ ĐÀO TẠO -->
+    <div class="modal fade" id="ngheModal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="ngheModalTitle">Thêm Nghề Đào Tạo</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" id="nRowIndex">
+            <div class="mb-3">
+              <label class="form-label">Tên nghề *</label>
+              <input type="text" id="n_name" class="form-control">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Thời gian đào tạo (tháng)</label>
+              <input type="number" id="n_thoiGian" class="form-control" min="0" step="0.5">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Trình độ đào tạo</label>
+              <select id="n_trinhDo" class="form-select">
+                <option value="Sơ cấp nghề">Sơ cấp nghề</option>
+                <option value="Đào tạo thường xuyên">Đào tạo thường xuyên</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Tổng số giờ</label>
+              <input type="number" id="n_tongGio" class="form-control" min="0">
+            </div>
+            <div id="n_msg" class="text-primary small"></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+            <button type="button" class="btn btn-primary" onclick="saveNgheDaoTao()">Lưu</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+      <!-- TAB: KHÓA HỌC -->
+      <div id="tab-courses" class="tab-pane">
+        <!-- Khu vực Giáo viên (Tạo khóa học) -->
+        <div id="teacherSection" class="hidden mb-4">
+          <div class="card">
+            <div class="card-header bg-success text-white fw-bold">Đăng ký Mở Lớp (Giáo viên)</div>
+            <div class="card-body">
+              <div class="row g-2">
+                <div class="col-md-4 mb-2">
+                  <label class="form-label small">Tên nghề đào tạo</label>
+                  <input class="form-control form-control-sm" list="ngheOptions" id="newCourseName" placeholder="Chọn nghề...">
+                  <datalist id="ngheOptions"></datalist>
+                </div>
+                <div class="col-md-2 mb-2"><label class="form-label small">Năm ĐT</label><input type="number" id="c_nam" class="form-control form-control-sm" value="2024"></div>
+                <div class="col-md-2 mb-2"><label class="form-label small">Ngày KG</label><input type="date" id="newCourseStart" class="form-control form-control-sm"></div>
+                <div class="col-md-2 mb-2"><label class="form-label small">Ngày BG</label><input type="date" id="newCourseEnd" class="form-control form-control-sm"></div>
+                <div class="col-md-2 mb-2"><label class="form-label small">Số ngày học</label><input type="number" id="c_soNgay" class="form-control form-control-sm"></div>
+
+                <div class="col-md-4 mb-2"><label class="form-label small">Địa điểm (Thôn/Xã/Huyện/Tỉnh)</label><input type="text" id="c_diaDiem" class="form-control form-control-sm"></div>
+                <div class="col-md-4 mb-2"><label class="form-label small">QĐ Mở Lớp</label><input type="text" id="c_qdMo" class="form-control form-control-sm"></div>
+                <div class="col-md-4 mb-2"><label class="form-label small">QĐ Công nhận TN</label><input type="text" id="c_qdTN" class="form-control form-control-sm"></div>
+              </div>
+              <button class="btn btn-success mt-2" onclick="createCourse()"><i class="bi bi-plus-circle"></i> Gửi yêu cầu mở lớp</button>
+              <div id="teacherAlert" class="mt-2 text-primary"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card shadow-sm">
+          <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
+            Danh sách Khóa học
+            <button class="btn btn-sm btn-outline-primary" onclick="loadCourses()"><i class="bi bi-arrow-clockwise"></i> Làm mới</button>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-hover mb-0" id="coursesTable">
+                <thead class="table-light">
+                  <tr><th>Mã Lớp</th><th>Tên Nghề</th><th>Giáo Viên</th><th>Ngày KG</th><th>Ngày BG</th><th>Trạng Thái</th><th>Thao tác</th></tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: PROFILE / ĐỔI MẬT KHẨU -->
+      <div id="tab-profile" class="tab-pane hidden">
+        <div class="card shadow-sm" style="max-width: 500px;">
+          <div class="card-header bg-white fw-bold">Đổi Mật Khẩu</div>
+          <div class="card-body">
+            <div id="pwdAlert" class="alert hidden"></div>
+            <div class="mb-3">
+              <label class="form-label">Mật khẩu cũ</label>
+              <input type="password" id="oldPwd" class="form-control">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Mật khẩu mới</label>
+              <input type="password" id="newPwd" class="form-control">
+            </div>
+            <button class="btn btn-primary" onclick="changePwd()">Xác nhận đổi</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: QUẢN LÝ TÀI KHOẢN (Admin) -->
+      <div id="tab-accounts" class="tab-pane hidden">
+        <div class="card shadow-sm">
+          <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
+            Quản lý Tài khoản
+            <button class="btn btn-sm btn-primary" onclick="openAccountForm()"><i class="bi bi-person-plus"></i> Thêm Tài khoản</button>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-hover mb-0" id="accountsTable">
+                <thead class="table-light">
+                  <tr><th>Tên đăng nhập</th><th>Quyền (Role)</th><th>Họ tên</th><th>Thao tác</th></tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Form Thêm/Sửa Tài khoản -->
+        <div id="accountFormArea" class="card mt-3 hidden border-primary" style="max-width: 600px;">
+          <div class="card-header bg-primary text-white py-1">
+            <h6 class="mb-0" id="accountFormTitle">Thêm Tài Khoản</h6>
+          </div>
+          <div class="card-body py-2">
+            <input type="hidden" id="aRowIndex">
+            <div class="row g-2">
+              <div class="col-md-6"><label class="small">Tên đăng nhập</label><input type="text" id="a_user" class="form-control form-control-sm"></div>
+              <div class="col-md-6"><label class="small">Mật khẩu</label><input type="password" id="a_pass" class="form-control form-control-sm"></div>
+              <div class="col-md-6">
+                <label class="small">Quyền hạn</label>
+                <select id="a_role" class="form-select form-select-sm"><option value="GiaoVien">Giáo Viên</option><option value="GiaoVu">Giáo Vụ</option><option value="Admin">Admin</option></select>
+              </div>
+              <div class="col-md-6"><label class="small">Họ tên người dùng</label><input type="text" id="a_name" class="form-control form-control-sm"></div>
+              <div class="col-md-12 text-end mt-2">
+                <span id="a_msg" class="me-2 small text-primary"></span>
+                <button class="btn btn-sm btn-secondary" onclick="closeAccountForm()">Hủy</button>
+                <button class="btn btn-sm btn-success" onclick="saveAccount()">Lưu Tài khoản</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+
+      <!-- TAB: QUẢN LÝ DANH MỤC (Admin / GiaoVu) -->
+      <div id="tab-categories" class="tab-pane hidden">
+        <div class="row">
+          <div class="col-md-7">
+            <div class="card shadow-sm">
+              <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Nghề Đào Tạo</span>
+                <div>
+                  <input type="file" id="importExcelFile" class="hidden" accept=".xlsx, .xls">
+                  <button class="btn btn-sm btn-outline-info me-1" onclick="downloadTemplate()"><i class="bi bi-download"></i> File Mẫu</button>
+                  <button class="btn btn-sm btn-outline-secondary me-1" onclick="document.getElementById('importExcelFile').click()"><i class="bi bi-file-earmark-arrow-up"></i> Nhập Excel</button>
+                  <button class="btn btn-sm btn-outline-success me-1" onclick="exportCategoriesToExcel()"><i class="bi bi-file-earmark-arrow-down"></i> Xuất Excel</button>
+                  <button class="btn btn-sm btn-primary" onclick="openNgheModal()"><i class="bi bi-plus"></i> Thêm</button>
+                </div>
+              </div>
+              <div class="card-body p-0">
+                <div class="table-responsive">
+                  <table class="table table-sm table-hover mb-0" id="tbl-DanhSachNghe">
+                    <thead class="table-light"><tr>
+                      <th class="ps-3">Tên Nghề</th><th>T.Gian (Tháng)</th><th>Trình Độ</th><th>Tổng Giờ</th><th class="text-end pe-3">Thao tác</th>
+                    </tr></thead>
+                    <tbody></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-5">
+            <div class="card shadow-sm">
+              <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Đối Tượng Học Viên</span>
+                <button class="btn btn-sm btn-primary" onclick="addCategory('DoiTuong')"><i class="bi bi-plus"></i> Thêm</button>
+              </div>
+              <div class="card-body p-0">
+                <table class="table table-sm table-hover mb-0" id="tbl-DoiTuong">
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      </div>
+
+      <!-- TAB: CẤU HÌNH (Admin) -->
+      <div id="tab-config" class="tab-pane hidden">
+        <div class="card shadow-sm" style="max-width: 600px;">
+          <div class="card-header bg-white fw-bold">Cấu hình Hệ thống</div>
+          <div class="card-body">
+            <div id="cfgAlert" class="alert hidden py-2 small"></div>
+            <div class="mb-2">
+              <label class="form-label small fw-bold">ID Google Docs - Đơn xin học mẫu</label>
+              <input type="text" id="cfg_donxinhoc" class="form-control form-control-sm">
+            </div>
+            <div class="mb-2">
+              <label class="form-label small fw-bold">ID Google Docs - Danh sách lớp mẫu</label>
+              <input type="text" id="cfg_danhsachlop" class="form-control form-control-sm">
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-bold">ID Thư mục xuất file (Export Folder)</label>
+              <input type="text" id="cfg_export" class="form-control form-control-sm">
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-bold">Năm Đào Tạo mặc định</label>
+              <input type="number" id="cfg_nam" class="form-control form-control-sm" placeholder="VD: 2024">
+            </div>
+            <button class="btn btn-sm btn-primary" onclick="saveConfigData()">Lưu Cấu hình</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ==============================================
+         MODAL: QUẢN LÝ LỚP HỌC (HV & QR)
+         ============================================== -->
+    <div class="modal fade" id="courseModal" tabindex="-1">
+      <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+          <div class="modal-header bg-light">
+            <h5 class="modal-title">Quản lý lớp học: <span id="modalCourseId" class="text-primary"></span></h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <ul class="nav nav-tabs" id="myTab">
+              <li class="nav-item">
+                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#students">Học viên</button>
+              </li>
+              <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#docs" onclick="setTimeout(generateQR, 300)">Hồ sơ & QR</button>
+              </li>
+            </ul>
+
+            <div class="tab-content mt-3">
+              <!-- Tab Học viên -->
+              <div class="tab-pane fade show active" id="students">
+                <div class="d-flex justify-content-between mb-2">
+                  <button class="btn btn-sm btn-info text-white" onclick="loadStudents()"><i class="bi bi-arrow-clockwise"></i> Tải danh sách</button>
+                  <button class="btn btn-sm btn-primary" id="btnAddStudent" onclick="openStudentForm()"><i class="bi bi-person-plus"></i> Thêm HV thủ công</button>
+                </div>
+                <div class="table-responsive">
+                  <table class="table table-sm table-bordered align-middle" id="studentsTable">
+                    <thead class="table-light">
+                      <tr>
+                        <th>Họ tên</th><th>Ngày sinh</th><th>Giới tính</th><th>CCCD</th><th>Đối tượng</th><th>SĐT</th><th>Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody></tbody>
+                  </table>
+                </div>
+
+                <!-- Form Thêm/Sửa Học Viên -->
+                <div id="studentFormArea" class="card mt-3 hidden shadow-sm border" style="border-top: 3px solid #3f6ad8 !important;">
+                  <div class="card-header d-flex justify-content-between align-items-center py-2">
+                    <h6 class="mb-0 fw-bold text-primary" id="studentFormTitle">Thêm Học Viên</h6>
+                    <button class="btn-close btn-sm" onclick="closeStudentForm()"></button>
+                  </div>
+                  <div class="card-body py-2" style="max-height: 400px; overflow-y: auto;">
+                    <input type="hidden" id="stuRowIndex">
+                    <h6 class="small fw-bold text-muted mt-2 border-bottom pb-1">Cá nhân</h6>
+                    <div class="row g-2">
+                      <div class="col-md-4"><label class="small">Họ tên *</label><input type="text" id="s_name" class="form-control form-control-sm"></div>
+                      <div class="col-md-3"><label class="small">Ngày sinh *</label><input type="date" id="s_dob" class="form-control form-control-sm"></div>
+                      <div class="col-md-2"><label class="small">Giới tính</label><select id="s_gender" class="form-select form-select-sm"><option value="Nam">Nam</option><option value="Nữ">Nữ</option></select></div>
+                      <div class="col-md-3"><label class="small">CCCD *</label><input type="text" id="s_cccd" class="form-control form-control-sm"></div>
+                      <div class="col-md-3"><label class="small">SĐT</label><input type="text" id="s_phone" class="form-control form-control-sm"></div>
+                      <div class="col-md-3"><label class="small">Dân tộc</label><input type="text" id="s_dantoc" class="form-control form-control-sm"></div>
+                      <div class="col-md-3"><label class="small">Tôn giáo</label><input type="text" id="s_tongiao" class="form-control form-control-sm"></div>
+                      <div class="col-md-3"><label class="small">Đối tượng</label><select id="s_doituong" class="form-select form-select-sm"><option value="Bình thường">Bình thường</option></select></div>
+                    </div>
+
+<div class="row g-2 mt-1">
+                      <div class="col-md-3"><label class="small">Trình độ</label><input type="text" id="s_trinhdo" class="form-control form-control-sm"></div>
+                      <div class="col-md-3"><label class="small">Trình độ văn hóa</label><input type="text" id="s_trinhdovanhoa" class="form-control form-control-sm"></div>
+                      <div class="col-md-3"><label class="small">Ngày cấp CCCD</label><input type="date" id="s_ngaycap" class="form-control form-control-sm"></div>
+                      <div class="col-md-3"><label class="small">Nơi cấp CCCD</label><input type="text" id="s_noicap" class="form-control form-control-sm"></div>
+                    </div>
+                    <div class="row g-2 mt-1">
+                      <div class="col-md-3"><label class="small">Email</label><input type="email" id="s_email" class="form-control form-control-sm"></div>
+                      <div class="col-md-3"><label class="small">Thường trú</label><input type="text" id="s_thuongtru" class="form-control form-control-sm"></div>
+                      <div class="col-md-3"><label class="small">Tạm trú</label><input type="text" id="s_tamtru" class="form-control form-control-sm"></div>
+                      <div class="col-md-3"><label class="small">Quê quán</label><input type="text" id="s_quequan" class="form-control form-control-sm"></div>
+                    </div>
+                    <div class="row g-2 mt-1">
+                      <div class="col-md-3"><label class="small">Nơi sinh</label><input type="text" id="s_noisinh" class="form-control form-control-sm"></div>
+                      <div class="col-md-3"><label class="small">Huyện thường trú</label><input type="text" id="s_huyenthuongtru" class="form-control form-control-sm"></div>
+                      <div class="col-md-3"><label class="small">Xã thường trú</label><input type="text" id="s_xathuongtru" class="form-control form-control-sm"></div>
+                      <div class="col-md-3"><label class="small">Thôn thường trú</label><input type="text" id="s_thonthuongtru" class="form-control form-control-sm"></div>
+                    </div>
+                    <h6 class="small fw-bold text-muted mt-3 border-bottom pb-1">Gia đình</h6>
+                    <div class="row g-2">
+                      <div class="col-md-3"><label class="small">Tên Cha</label><input type="text" id="s_tencha" class="form-control form-control-sm"></div>
+                      <div class="col-md-3"><label class="small">Nghề Cha</label><input type="text" id="s_nghecha" class="form-control form-control-sm"></div>
+                      <div class="col-md-3"><label class="small">Tên Mẹ</label><input type="text" id="s_tenme" class="form-control form-control-sm"></div>
+                      <div class="col-md-3"><label class="small">Nghề Mẹ</label><input type="text" id="s_ngheme" class="form-control form-control-sm"></div>
+                      <div class="col-md-3"><label class="small">Tên Vợ/Chồng</label><input type="text" id="s_tenvochong" class="form-control form-control-sm"></div>
+                      <div class="col-md-3"><label class="small">Nghề Vợ/Chồng</label><input type="text" id="s_nghevochong" class="form-control form-control-sm"></div>
+                    </div>
+
+                  </div>
+                  <div class="card-footer bg-light text-end py-2">
+                    <span id="s_msg" class="me-3 small text-primary"></span>
+                    <button class="btn btn-sm btn-secondary" onclick="closeStudentForm()">Hủy</button>
+                    <button class="btn btn-sm btn-success" onclick="saveStudent()">Lưu thông tin</button>
+                  </div>
+                </div>
+
+
+
+              </div>
+
+              <!-- Tab Hồ sơ & QR -->
+              <div class="tab-pane fade" id="docs">
+                <div class="row">
+                  <div class="col-md-6 border-end">
+                    <h6>1. Đăng ký trực tuyến (QR Code)</h6>
+                    <p class="small text-muted mb-2">Học viên quét mã QR này để tự điền thông tin đăng ký vào lớp.</p>
+                    <button class="btn btn-sm btn-primary mb-2" onclick="generateQR()">Tạo / Xem mã QR</button>
+                    <div id="qrCodeContainer"></div>
+                  </div>
+                  <div class="col-md-6 ps-4">
+                    <h6>2. Xuất Biểu Mẫu / Hồ Sơ</h6>
+                    <p class="small text-muted mb-2">Hệ thống sẽ tự động điền dữ liệu vào form Google Docs mẫu.</p>
+                    <button class="btn btn-sm btn-outline-secondary mb-2" onclick="exportDoc('DonXinHoc')"><i class="bi bi-file-earmark-word"></i> Xuất Đơn xin học</button><br>
+                    <button class="btn btn-sm btn-outline-secondary mb-2" onclick="exportDoc('DanhSachLop')"><i class="bi bi-file-earmark-spreadsheet"></i> Xuất Danh sách lớp</button>
+                    <div id="exportStatus" class="mt-2 text-success fw-bold"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+      </div> <!-- End content-area -->
+
+<!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <script>
+      let currentUser = null;
+      let currentCourseId = null;
+      let webAppUrl = "";
+      let dsDoiTuong = [];
+      let courseModalInstance = null;
+
+      // Init
+      google.script.run.withSuccessHandler(url => { webAppUrl = url; }).getWebAppUrl();
+      google.script.run.withSuccessHandler(list => { dsDoiTuong = list; populateDoiTuong(); }).getDoiTuong();
+      google.script.run.withSuccessHandler(list => {
+        let dl = document.getElementById('ngheOptions');
+        list.forEach(n => { dl.innerHTML += `<option value="${n}">`; });
+      }).getDanhSachNghe();
+
+      function populateDoiTuong() {
+        let sel = document.getElementById('s_doituong');
+        dsDoiTuong.forEach(dt => {
+          let opt = document.createElement('option');
+          opt.value = dt; opt.innerText = dt;
+          sel.appendChild(opt);
+        });
+      }
+
+      function doLogin() {
+        let u = document.getElementById('username').value;
+        let p = document.getElementById('password').value;
+        let alertBox = document.getElementById('loginAlert');
+
+        alertBox.classList.remove('hidden'); alertBox.className = "alert alert-info";
+        alertBox.innerText = "Đang kiểm tra...";
+
+        google.script.run.withSuccessHandler(res => {
+          if (res.success) {
+            currentUser = res.user;
+            showDashboard();
+          } else {
+            alertBox.className = "alert alert-danger";
+            alertBox.innerText = res.message;
+          }
+        }).loginUser(u, p);
+      }
+
+      function logout() {
+        currentUser = null;
+        document.getElementById('sidebar').classList.add('hidden');
+        document.getElementById('content-area').classList.add('hidden');
+        document.getElementById('loginPage').style.display = 'flex';
+        document.getElementById('username').value = ""; document.getElementById('password').value = "";
+        document.getElementById('loginAlert').classList.add('hidden');
+      }
+
+      function showDashboard() {
+        document.getElementById('loginPage').style.display = 'none';
+        document.getElementById('sidebar').classList.remove('hidden');
+        document.getElementById('content-area').classList.remove('hidden');
+
+        document.getElementById('displayUserName').innerText = currentUser.name;
+        document.getElementById('userRoleBadge').innerText = currentUser.role;
+
+        if (currentUser.role === 'GiaoVien') {
+          document.getElementById('teacherSection').classList.remove('hidden');
+          document.getElementById('btnAddStudent').classList.remove('hidden');
+        } else {
+          document.getElementById('teacherSection').classList.add('hidden');
+          document.getElementById('btnAddStudent').classList.add('hidden'); // Admin/Giáo vụ chỉ xem
+        }
+
+        if (currentUser.role === 'Admin' || currentUser.role === 'GiaoVu') {
+          document.getElementById('nav-categories').classList.remove('hidden');
+          document.getElementById('nav-accounts').classList.remove('hidden');
+          loadAccounts();
+          loadCategories('DanhSachNghe');
+          loadCategories('DoiTuong');
+        } else {
+          document.getElementById('nav-categories').classList.add('hidden');
+          document.getElementById('nav-accounts').classList.add('hidden');
+        }
+
+        if (currentUser.role === 'Admin') {
+          document.getElementById('nav-config').classList.remove('hidden');
+          loadConfig();
+        } else {
+          document.getElementById('nav-config').classList.add('hidden');
+        }
+
+
+        // Load config for all users (Teachers need namHienTai)
+        google.script.run.withSuccessHandler(config => {
+            if(config.namHienTai && document.getElementById('c_nam')) {
+                document.getElementById('c_nam').value = config.namHienTai;
+            }
+        }).getConfig(currentUser);
+
+        courseModalInstance = new bootstrap.Modal(document.getElementById('courseModal'));
+        loadCourses();
+      }
+
+      // Chống XSS đơn giản
+      function escapeHtml(unsafe) {
+        if (unsafe === null || unsafe === undefined) return "";
+        return String(unsafe)
+             .replace(/&/g, "&amp;")
+             .replace(/</g, "&lt;")
+             .replace(/>/g, "&gt;")
+             .replace(/"/g, "&quot;")
+             .replace(/'/g, "&#039;");
+      }
+
+      function switchTab(tabId) {
+        document.querySelectorAll('.tab-pane').forEach(el => el.classList.add('hidden'));
+        document.getElementById(tabId).classList.remove('hidden');
+
+        document.querySelectorAll('#sidebar .nav-link').forEach(el => el.classList.remove('active'));
+        document.getElementById('nav-' + tabId.replace('tab-','')).classList.add('active');
+      }
+
+      function changePwd() {
+        let oldP = document.getElementById('oldPwd').value;
+        let newP = document.getElementById('newPwd').value;
+        if(!oldP || !newP) return alert("Nhập đủ thông tin!");
+
+        google.script.run.withSuccessHandler(res => {
+          let box = document.getElementById('pwdAlert');
+          box.classList.remove('hidden');
+          box.className = res.success ? "alert alert-success" : "alert alert-danger";
+          box.innerText = res.message;
+          if(res.success) { document.getElementById('oldPwd').value=""; document.getElementById('newPwd').value=""; }
+        }).changePassword(currentUser, oldP, newP);
+      }
+
+      // --- KHÓA HỌC ---
+      function loadCourses() {
+        let tbody = document.querySelector('#coursesTable tbody');
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center">Đang tải...</td></tr>';
+        google.script.run.withSuccessHandler(courses => {
+          tbody.innerHTML = '';
+          if (courses.length === 0) return tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Không có dữ liệu.</td></tr>';
+
+          courses.forEach(c => {
+            let tr = document.createElement('tr');
+            let actionHtml = `<button class="btn btn-sm btn-primary" onclick="openCourseModal('${c.id}')"><i class="bi bi-eye"></i> Quản lý</button> `;
+
+            if ((currentUser.role === 'Admin' || currentUser.role === 'GiaoVu') && c.status !== 'Đã duyệt') {
+              actionHtml += `<button class="btn btn-sm btn-success" onclick="approveCourse(${c.rowIndex})"><i class="bi bi-check-lg"></i> Duyệt</button>`;
+            }
+            let dStart = c.start ? new Date(c.start).toLocaleDateString('vi-VN') : '';
+            let dEnd = c.end ? new Date(c.end).toLocaleDateString('vi-VN') : '';
+            let sBadge = c.status === 'Đã duyệt' ? 'bg-success' : 'bg-warning text-dark';
+
+            tr.innerHTML = `<td>${escapeHtml(c.id)}</td>
+                            <td>${escapeHtml(c.name)}</td>
+                            <td>${escapeHtml(c.teacher)}</td>
+                            <td>${escapeHtml(dStart)}</td>
+                            <td>${escapeHtml(dEnd)}</td>
+                            <td><span class="badge ${sBadge}">${escapeHtml(c.status)}</span></td>
+                            <td>${actionHtml}</td>`;
+            tbody.appendChild(tr);
+          });
+        }).getCourses(currentUser);
+      }
+
+      function createCourse() {
+        let data = {
+          name: document.getElementById('newCourseName').value,
+          startDate: document.getElementById('newCourseStart').value,
+          endDate: document.getElementById('newCourseEnd').value,
+          namDaoTao: document.getElementById('c_nam').value,
+          soNgay: document.getElementById('c_soNgay').value,
+          diaDiem: document.getElementById('c_diaDiem').value,
+          qdMoLop: document.getElementById('c_qdMo').value,
+          qdTotNghiep: document.getElementById('c_qdTN').value
+        };
+        if(!data.name) return alert("Vui lòng nhập hoặc chọn tên nghề!");
+
+        document.getElementById('teacherAlert').innerText = "Đang xử lý...";
+        google.script.run.withSuccessHandler(res => {
+          document.getElementById('teacherAlert').innerText = res.message;
+          if (res.success) { document.getElementById('newCourseName').value = ""; loadCourses(); }
+        }).createCourse(data, currentUser);
+      }
+
+      function approveCourse(rowIndex) {
+        if(!confirm("Bạn chắc chắn duyệt lớp học này?")) return;
+        google.script.run.withSuccessHandler(res => { loadCourses(); }).approveCourse(rowIndex, currentUser);
+      }
+
+      // --- HỌC VIÊN ---
+      function openCourseModal(courseId) {
+        currentCourseId = courseId;
+        document.getElementById('modalCourseId').innerText = courseId;
+        closeStudentForm();
+        document.querySelector('#studentsTable tbody').innerHTML = '';
+        document.getElementById('qrCodeContainer').innerHTML = '';
+        document.getElementById('exportStatus').innerText = '';
+        courseModalInstance.show();
+        loadStudents();
+      }
+
+      function loadStudents() {
+        let tbody = document.querySelector('#studentsTable tbody');
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center">Đang tải...</td></tr>';
+
+        google.script.run.withSuccessHandler(students => {
+          tbody.innerHTML = '';
+          if (students.length === 0) return tbody.innerHTML = '<tr><td colspan="7" class="text-center">Chưa có học viên.</td></tr>';
+
+          students.forEach(s => {
+            let tr = document.createElement('tr');
+            let d = s.dob ? new Date(s.dob).toLocaleDateString('vi-VN') : '';
+
+            // Cột Thao tác chỉ cho Giáo viên
+            let actions = "";
+            if(currentUser.role === 'GiaoVien') {
+              let safeObj = encodeURIComponent(JSON.stringify(s));
+              actions = `<button class="btn btn-sm btn-outline-primary py-0" onclick="editStudent('${safeObj}')"><i class="bi bi-pencil"></i></button>
+                         <button class="btn btn-sm btn-outline-danger py-0" onclick="deleteStudent(${s.rowIndex})"><i class="bi bi-trash"></i></button>`;
+            }
+
+            tr.innerHTML = `<td>${escapeHtml(s.fullName)}</td>
+                            <td>${escapeHtml(d)}</td>
+                            <td>${escapeHtml(s.gender)}</td>
+                            <td>${escapeHtml(s.cccd)}</td>
+                            <td>${escapeHtml(s.doiTuong||'')}</td>
+                            <td>${escapeHtml(s.phone)}</td>
+                            <td>${actions}</td>`;
+            tbody.appendChild(tr);
+          });
+        }).getStudentsByCourse(currentCourseId, currentUser);
+      }
+
+      function openStudentForm() {
+        document.getElementById('studentFormArea').classList.remove('hidden');
+        document.getElementById('studentFormTitle').innerText = "Thêm Học Viên";
+        document.getElementById('stuRowIndex').value = "";
+        document.getElementById('s_name').value = ""; document.getElementById('s_dob').value = "";
+        document.getElementById('s_cccd').value = ""; document.getElementById('s_address').value = "";
+        document.getElementById('s_phone').value = ""; document.getElementById('s_msg').innerText = "";
+      }
+
+      function editStudent(safeObj) {
+        let s = JSON.parse(decodeURIComponent(safeObj));
+        document.getElementById('studentFormArea').classList.remove('hidden');
+        document.getElementById('studentFormTitle').innerText = "Sửa Học Viên";
+        document.getElementById('stuRowIndex').value = s.rowIndex;
+
+        document.getElementById('s_name').value = s.fullName || "";
+        if(s.dob) document.getElementById('s_dob').value = new Date(s.dob).toISOString().split('T')[0];
+        document.getElementById('s_gender').value = s.gender || "Nam";
+        document.getElementById('s_cccd').value = s.cccd || "";
+        document.getElementById('s_phone').value = s.phone || "";
+        document.getElementById('s_dantoc').value = s.danToc || "";
+        document.getElementById('s_tongiao').value = s.tonGiao || "";
+        if(s.doiTuong) document.getElementById('s_doituong').value = s.doiTuong;
+
+        document.getElementById('s_thuongtru').value = s.thuongTru || "";
+        document.getElementById('s_tamtru').value = s.tamTru || "";
+        document.getElementById('s_quequan').value = s.queQuan || "";
+        document.getElementById('s_noisinh').value = s.noiSinh || "";
+        document.getElementById('s_email').value = s.email || "";
+
+        document.getElementById('s_tencha').value = s.tenCha || "";
+        document.getElementById('s_nghecha').value = s.ngheCha || "";
+        document.getElementById('s_tenme').value = s.tenMe || "";
+        document.getElementById('s_ngheme').value = s.ngheMe || "";
+        document.getElementById('s_trinhdo').value = s.trinhDo || "";
+        document.getElementById('s_trinhdovanhoa').value = s.trinhDoVanHoa || "";
+        if(s.ngayCap) document.getElementById('s_ngaycap').value = new Date(s.ngayCap).toISOString().split('T')[0];
+        document.getElementById('s_noicap').value = s.noiCap || "";
+        document.getElementById('s_tenvochong').value = s.tenVoChong || "";
+        document.getElementById('s_nghevochong').value = s.ngheVoChong || "";
+        document.getElementById('s_huyenthuongtru').value = s.huyenThuongTru || "";
+        document.getElementById('s_xathuongtru').value = s.xaThuongTru || "";
+        document.getElementById('s_thonthuongtru').value = s.thonThuongTru || "";
+      }
+
+      function closeStudentForm() { document.getElementById('studentFormArea').classList.add('hidden'); }
+
+      function saveStudent() {
+        let rowIndex = document.getElementById('stuRowIndex').value;
+        let data = {
+          courseId: currentCourseId, fullName: document.getElementById('s_name').value,
+          dob: document.getElementById('s_dob').value, gender: document.getElementById('s_gender').value,
+          cccd: document.getElementById('s_cccd').value, phone: document.getElementById('s_phone').value,
+          danToc: document.getElementById('s_dantoc').value, tonGiao: document.getElementById('s_tongiao').value,
+          doiTuong: document.getElementById('s_doituong').value, email: document.getElementById('s_email').value,
+          thuongTru: document.getElementById('s_thuongtru').value, tamTru: document.getElementById('s_tamtru').value,
+          queQuan: document.getElementById('s_quequan').value, noiSinh: document.getElementById('s_noisinh').value,
+          tenCha: document.getElementById('s_tencha').value, ngheCha: document.getElementById('s_nghecha').value,
+          tenMe: document.getElementById('s_tenme').value, ngheMe: document.getElementById('s_ngheme').value,
+          trinhDo: document.getElementById('s_trinhdo').value,
+          trinhDoVanHoa: document.getElementById('s_trinhdovanhoa').value,
+          ngayCap: document.getElementById('s_ngaycap').value,
+          noiCap: document.getElementById('s_noicap').value,
+          tenVoChong: document.getElementById('s_tenvochong').value,
+          ngheVoChong: document.getElementById('s_nghevochong').value,
+          huyenThuongTru: document.getElementById('s_huyenthuongtru').value,
+          xaThuongTru: document.getElementById('s_xathuongtru').value,
+          thonThuongTru: document.getElementById('s_thonthuongtru').value
+        };
+        if(!data.fullName || !data.dob || !data.cccd) return alert("Nhập đủ Họ tên, Ngày sinh, CCCD!");
+
+        let msg = document.getElementById('s_msg'); msg.innerText = "Đang lưu...";
+
+        if (rowIndex) {
+          google.script.run.withSuccessHandler(res => { loadStudents(); closeStudentForm(); }).updateStudent(rowIndex, data, currentUser);
+        } else {
+          google.script.run.withSuccessHandler(res => { loadStudents(); closeStudentForm(); }).addStudentManual(data, currentUser);
+        }
+      }
+
+      function deleteStudent(rowIndex) {
+        if(!confirm("Bạn chắc chắn muốn xóa học viên này?")) return;
+        google.script.run.withSuccessHandler(res => { loadStudents(); }).deleteStudent(rowIndex, currentUser);
+      }
+
+      // --- QR & XUẤT ---
+      function generateQR() {
+        let container = document.getElementById('qrCodeContainer');
+        container.innerHTML = '';
+        if(!webAppUrl) return container.innerHTML = '<span class="text-danger">Lỗi lấy URL, tải lại trang.</span>';
+
+        let url = webAppUrl + "?page=register&courseId=" + currentCourseId;
+        new QRCode(container, { text: url, width: 200, height: 200 });
+        container.innerHTML += `<div class="mt-2 small"><a href="${url}" target="_blank">${url}</a></div>`;
+      }
+
+      function exportDoc(docType) {
+        document.getElementById('exportStatus').innerText = "Đang tạo hồ sơ...";
+        google.script.run.withSuccessHandler(res => {
+          if (res.success) document.getElementById('exportStatus').innerHTML = `<a href="${res.url}" target="_blank">✔ ${res.message} - Bấm để tải</a>`;
+          else document.getElementById('exportStatus').innerHTML = `<span class="text-danger">${res.message}</span>`;
+        }).generateDocument(docType, currentCourseId, currentUser);
+      }
+      // --- ADMIN LOGIC ---
+      function loadAccounts() {
+        let tbody = document.querySelector('#accountsTable tbody');
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center">Đang tải...</td></tr>';
+        google.script.run.withSuccessHandler(accounts => {
+          tbody.innerHTML = '';
+          accounts.forEach(a => {
+            let tr = document.createElement('tr');
+            let actions = `<button class="btn btn-sm btn-outline-primary py-0" onclick="editAccount('${encodeURIComponent(JSON.stringify(a))}')"><i class="bi bi-pencil"></i></button>
+                           <button class="btn btn-sm btn-outline-danger py-0" onclick="deleteAccount(${a.rowIndex})"><i class="bi bi-trash"></i></button>`;
+            tr.innerHTML = `<td>${escapeHtml(a.username)}</td><td>${escapeHtml(a.role)}</td><td>${escapeHtml(a.name)}</td><td>${actions}</td>`;
+            tbody.appendChild(tr);
+          });
+        }).getAccounts(currentUser);
+      }
+
+      function openAccountForm() {
+        document.getElementById('accountFormArea').classList.remove('hidden');
+        document.getElementById('accountFormTitle').innerText = "Thêm Tài khoản";
+        document.getElementById('aRowIndex').value = "";
+        document.getElementById('a_user').value = ""; document.getElementById('a_pass').value = "";
+        document.getElementById('a_role').value = "GiaoVien"; document.getElementById('a_name').value = "";
+        document.getElementById('a_msg').innerText = "";
+      }
+
+      function editAccount(safeObj) {
+        let a = JSON.parse(decodeURIComponent(safeObj));
+        document.getElementById('accountFormArea').classList.remove('hidden');
+        document.getElementById('accountFormTitle').innerText = "Sửa Tài khoản";
+        document.getElementById('aRowIndex').value = a.rowIndex;
+        document.getElementById('a_user').value = a.username; document.getElementById('a_pass').value = a.password || "";
+        document.getElementById('a_role').value = a.role; document.getElementById('a_name').value = a.name;
+      }
+
+      function closeAccountForm() { document.getElementById('accountFormArea').classList.add('hidden'); }
+
+      function saveAccount() {
+        let rowIndex = document.getElementById('aRowIndex').value;
+        let data = { username: document.getElementById('a_user').value, password: document.getElementById('a_pass').value, role: document.getElementById('a_role').value, name: document.getElementById('a_name').value };
+        if(!data.username || (!rowIndex && !data.password)) return alert("Vui lòng nhập tên đăng nhập (và mật khẩu khi thêm mới)!");
+        let msg = document.getElementById('a_msg'); msg.innerText = "Đang lưu...";
+        if (rowIndex) google.script.run.withSuccessHandler(res => { loadAccounts(); closeAccountForm(); }).updateAccount(rowIndex, data, currentUser);
+        else google.script.run.withSuccessHandler(res => { loadAccounts(); closeAccountForm(); }).addAccount(data, currentUser);
+      }
+
+      function deleteAccount(rowIndex) {
+        if(!confirm("Bạn chắc chắn muốn xóa tài khoản này?")) return;
+        google.script.run.withSuccessHandler(res => { alert(res.message); loadAccounts(); }).deleteAccount(rowIndex, currentUser);
+      }
+
+      function loadConfig() {
+        google.script.run.withSuccessHandler(config => {
+          document.getElementById('cfg_donxinhoc').value = config.donXinHoc || "";
+          document.getElementById('cfg_danhsachlop').value = config.danhSachLop || "";
+          document.getElementById('cfg_export').value = config.exportFolder || "";
+          document.getElementById('cfg_nam').value = config.namHienTai || "";
+        }).getConfig(currentUser);
+      }
+
+      function saveConfigData() {
+        let data = {
+          donXinHoc: document.getElementById('cfg_donxinhoc').value.trim(),
+          danhSachLop: document.getElementById('cfg_danhsachlop').value.trim(),
+          exportFolder: document.getElementById('cfg_export').value.trim(),
+          namHienTai: document.getElementById('cfg_nam').value.trim()
+        };
+        let alertBox = document.getElementById('cfgAlert'); alertBox.className = "alert alert-info py-2 small"; alertBox.innerText = "Đang lưu...";
+        google.script.run.withSuccessHandler(res => {
+          alertBox.className = res.success ? "alert alert-success py-2 small" : "alert alert-danger py-2 small";
+          alertBox.innerText = res.message;
+        }).saveConfig(data, currentUser);
+      }
+
+      // --- CATEGORIES LOGIC ---
+
+function loadCategories(sheetName) {
+        let tbody = document.querySelector(`#tbl-${sheetName} tbody`);
+        if(!tbody) return;
+        tbody.innerHTML = `<tr><td colspan="${sheetName === 'DanhSachNghe' ? 5 : 2}" class="text-center small">Đang tải...</td></tr>`;
+
+        google.script.run.withSuccessHandler(items => {
+          tbody.innerHTML = '';
+          if (items.length === 0) return tbody.innerHTML = `<tr><td colspan="${sheetName === 'DanhSachNghe' ? 5 : 2}" class="text-center small text-muted">Chưa có dữ liệu.</td></tr>`;
+
+          items.forEach(item => {
+            let tr = document.createElement('tr');
+if (sheetName === 'DanhSachNghe') {
+              let safeItem = encodeURIComponent(JSON.stringify(item));
+              let actions = `<button class="btn btn-sm btn-link py-0 px-1" onclick="editNgheModal('${safeItem}')"><i class="bi bi-pencil"></i></button>
+                             <button class="btn btn-sm btn-link text-danger py-0 px-1" onclick="deleteCategory('${sheetName}', ${item.rowIndex})"><i class="bi bi-trash"></i></button>`;
+              tr.innerHTML = `<td class="ps-3 align-middle">${escapeHtml(item.value)}</td>
+                              <td class="align-middle">${escapeHtml(item.thoiGian)}</td>
+                              <td class="align-middle">${escapeHtml(item.trinhDo)}</td>
+                              <td class="align-middle">${escapeHtml(item.tongGio)}</td>
+                              <td class="text-end pe-2" style="width: 80px;">${actions}</td>`;
+} else {
+              let safeItemVal = encodeURIComponent(item.value);
+              let actions = `<button class="btn btn-sm btn-link py-0 px-1" onclick="editCategory('${sheetName}', ${item.rowIndex}, '${safeItemVal}')"><i class="bi bi-pencil"></i></button>
+                             <button class="btn btn-sm btn-link text-danger py-0 px-1" onclick="deleteCategory('${sheetName}', ${item.rowIndex})"><i class="bi bi-trash"></i></button>`;
+              tr.innerHTML = `<td class="ps-3 align-middle">${escapeHtml(item.value)}</td><td class="text-end pe-2" style="width: 80px;">${actions}</td>`;
+            }
+            tbody.appendChild(tr);
+          });
+        }).getCategoryData(sheetName, currentUser);
+
+        // Load sheet còn lại nếu đang load DanhSachNghe
+        if (sheetName === 'DanhSachNghe') loadCategories('DoiTuong');
+      }
+
+      function openNgheModal() {
+        document.getElementById('nRowIndex').value = "";
+        document.getElementById('n_name').value = "";
+        document.getElementById('n_thoiGian').value = "";
+        document.getElementById('n_trinhDo').value = "Sơ cấp nghề";
+        document.getElementById('n_tongGio').value = "";
+        document.getElementById('ngheModalTitle').innerText = "Thêm Nghề Đào Tạo";
+        document.getElementById('n_msg').innerText = "";
+        new bootstrap.Modal(document.getElementById('ngheModal')).show();
+      }
+
+function editNgheModal(safeItemObj) {
+        let item = JSON.parse(decodeURIComponent(safeItemObj));
+        document.getElementById('nRowIndex').value = item.rowIndex;
+        document.getElementById('n_name').value = item.value || "";
+        document.getElementById('n_thoiGian').value = item.thoiGian || "";
+        document.getElementById('n_trinhDo').value = item.trinhDo || "Sơ cấp nghề";
+        document.getElementById('n_tongGio').value = item.tongGio || "";
+        document.getElementById('ngheModalTitle').innerText = "Sửa Nghề Đào Tạo";
+        document.getElementById('n_msg').innerText = "";
+        new bootstrap.Modal(document.getElementById('ngheModal')).show();
+      }
+
+      function saveNgheDaoTao() {
+        let rowIndex = document.getElementById('nRowIndex').value;
+        let data = {
+          name: document.getElementById('n_name').value,
+          thoiGian: document.getElementById('n_thoiGian').value,
+          trinhDo: document.getElementById('n_trinhDo').value,
+          tongGio: document.getElementById('n_tongGio').value
+        };
+        if(!data.name) return alert("Vui lòng nhập tên nghề!");
+
+        document.getElementById('n_msg').innerText = "Đang lưu...";
+        if (rowIndex) {
+          google.script.run.withSuccessHandler(res => {
+            if(res.success) { bootstrap.Modal.getInstance(document.getElementById('ngheModal')).hide(); loadCategories('DanhSachNghe'); }
+            else alert(res.message);
+          }).updateCategoryItem('DanhSachNghe', rowIndex, data, currentUser);
+        } else {
+          google.script.run.withSuccessHandler(res => {
+            if(res.success) { bootstrap.Modal.getInstance(document.getElementById('ngheModal')).hide(); loadCategories('DanhSachNghe'); }
+            else alert(res.message);
+          }).addCategoryItem('DanhSachNghe', data, currentUser);
+        }
+      }
+
+      function addCategory(sheetName) {
+        if(sheetName === 'DanhSachNghe') return openNgheModal(); // Safety fallback
+        let title = "Đối Tượng";
+        let val = prompt(`Nhập tên ${title} mới:`);
+        if(!val || !val.trim()) return;
+
+        google.script.run.withSuccessHandler(res => {
+           if(res.success) loadCategories(sheetName);
+           else alert(res.message);
+        }).addCategoryItem(sheetName, val, currentUser);
+      }
+
+function editCategory(sheetName, rowIndex, safeOldVal) {
+        if(sheetName === 'DanhSachNghe') return; // Handled by editNgheModal
+        let oldVal = decodeURIComponent(safeOldVal);
+        let title = "Đối Tượng";
+        let val = prompt(`Sửa tên ${title}:`, oldVal);
+        if(!val || !val.trim() || val === oldVal) return;
+
+        google.script.run.withSuccessHandler(res => {
+           if(res.success) loadCategories(sheetName);
+           else alert(res.message);
+        }).updateCategoryItem(sheetName, rowIndex, val, currentUser);
+      }
+
+      function deleteCategory(sheetName, rowIndex) {
+        if(!confirm("Bạn chắc chắn muốn xóa mục này?")) return;
+        google.script.run.withSuccessHandler(res => {
+           if(res.success) loadCategories(sheetName);
+           else alert(res.message);
+        }).deleteCategoryItem(sheetName, rowIndex, currentUser);
+      }
+
+
+      // --- EXCEL IMPORT/EXPORT ---
+
+      function downloadTemplate() {
+        let data = [["Tên nghề", "Thời gian đào tạo (tháng)", "Trình độ đào tạo", "Tổng số giờ"]];
+        let ws = XLSX.utils.aoa_to_sheet(data);
+        let wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Mau_Nhap_Lieu");
+        XLSX.writeFile(wb, "Mau_Nhap_Danh_Muc_Nghe.xlsx");
+      }
+
+      function exportCategoriesToExcel() {
+        let tbody = document.querySelector('#tbl-DanhSachNghe tbody');
+        let rows = Array.from(tbody.querySelectorAll('tr'));
+
+        let data = [["Tên nghề", "Thời gian đào tạo (tháng)", "Trình độ đào tạo", "Tổng số giờ"]];
+
+        rows.forEach(tr => {
+          let cells = tr.querySelectorAll('td');
+          if (cells.length === 5) {
+            data.push([
+              cells[0].innerText,
+              cells[1].innerText,
+              cells[2].innerText,
+              cells[3].innerText
+            ]);
+          }
+        });
+
+        let ws = XLSX.utils.aoa_to_sheet(data);
+        let wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "DanhSachNghe");
+        XLSX.writeFile(wb, "Danh_Muc_Nghe.xlsx");
+      }
+
+      document.addEventListener('DOMContentLoaded', () => {
+        let importFile = document.getElementById('importExcelFile');
+        if (importFile) {
+          importFile.addEventListener('change', function(e) {
+            let file = e.target.files[0];
+            if (!file) return;
+
+            let reader = new FileReader();
+            reader.onload = function(e) {
+              let data = new Uint8Array(e.target.result);
+              let workbook = XLSX.read(data, {type: 'array'});
+              let firstSheetName = workbook.SheetNames[0];
+              let worksheet = workbook.Sheets[firstSheetName];
+              let json = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+
+              if (json.length > 1) {
+                let payload = [];
+                for(let i = 1; i < json.length; i++) {
+                  let row = json[i];
+                  if(row.length > 0 && row[0]) {
+                    payload.push({
+                      name: row[0],
+                      thoiGian: row[1] || "",
+                      trinhDo: row[2] || "Sơ cấp nghề",
+                      tongGio: row[3] || ""
+                    });
+                  }
+                }
+
+                if (payload.length > 0) {
+                  if(confirm(`Tìm thấy ${payload.length} nghề hợp lệ. Bạn có muốn nhập vào hệ thống?`)) {
+                    google.script.run.withSuccessHandler(res => {
+                      if(res.success) { alert("Nhập dữ liệu thành công!"); loadCategories('DanhSachNghe'); }
+                      else alert(res.message);
+                    }).batchImportCategoryItems('DanhSachNghe', payload, currentUser);
+                  }
+                } else {
+                  alert("Không tìm thấy dữ liệu hợp lệ trong file!");
+                }
+              }
+            };
+            reader.readAsArrayBuffer(file);
+            importFile.value = "";
+          });
+        }
+      });
+
+    </script>
+
+    <div style="position: fixed; bottom: 0; left: 0; width: 100%; text-align: center; padding: 10px; color: #6c757d; font-size: 0.85rem; background-color: #f1f4f6; border-top: 1px solid #dee2e6; z-index: 1000;">
+        Thiết kế và vận hành bởi: Phạm Ngọc Tú - Mọi chi tiết xin liên hệ email: ngoctu.dnkd@gmail.com
+    </div>
+
+  </body>
+</html>
