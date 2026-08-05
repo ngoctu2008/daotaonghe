@@ -1,0 +1,155 @@
+' HƯỚNG DẪN CÀI ĐẶT MACRO:
+' 1. Mở file CSDL.xlsm
+' 2. Nhấn phím Alt + F11 để mở cửa sổ VBA
+' 3. Chọn Insert > Module
+' 4. Copy và dán toàn bộ đoạn mã bên dưới vào Module vừa tạo
+' 5. Quay lại Excel, bạn có thể tạo một nút bấm (Button) trong tab Developer -> Insert -> Button, sau đó gán Macro "CapNhatDanhSach" cho nút bấm này.
+
+Sub CapNhatDanhSach()
+    Dim wsHV As Worksheet
+    Dim wsXa As Worksheet, wsTT As Worksheet, wsCN As Worksheet
+    Dim lastRowHV As Long
+    Dim i As Long
+    Dim startRowXa As Long, startRowTT As Long, startRowCN As Long
+
+    ' Khởi tạo các biến Worksheet
+    On Error Resume Next
+    Set wsHV = ThisWorkbook.Sheets("Thông tin HV")
+    Set wsXa = ThisWorkbook.Sheets("DSTN-Xã")
+    Set wsTT = ThisWorkbook.Sheets("DSTN-TT")
+    Set wsCN = ThisWorkbook.Sheets("Công nhận tốt nghiệp")
+    On Error GoTo 0
+
+    ' Kiểm tra xem các sheet có tồn tại không
+    If wsHV Is Nothing Or wsXa Is Nothing Or wsTT Is Nothing Or wsCN Is Nothing Then
+        MsgBox "Lỗi: Không tìm thấy các trang tính cần thiết (Thông tin HV, DSTN-Xã, DSTN-TT, Công nhận tốt nghiệp). Vui lòng kiểm tra lại tên sheet.", vbCritical
+        Exit Sub
+    End If
+
+    ' Tìm dòng cuối cùng có dữ liệu trong sheet "Thông tin HV" (cột A/STT)
+    lastRowHV = wsHV.Cells(wsHV.Rows.Count, "A").End(xlUp).Row
+    If lastRowHV < 3 Then
+        MsgBox "Không có dữ liệu học viên để cập nhật!", vbExclamation
+        Exit Sub
+    End If
+
+    ' Tắt cập nhật màn hình để macro chạy nhanh hơn
+    Application.ScreenUpdating = False
+    Application.Calculation = xlCalculationManual
+
+    ' ----------------------------------------------------
+    ' 1. Xử lý sheet DSTN-Xã
+    ' ----------------------------------------------------
+    startRowXa = 8 ' Dòng bắt đầu ghi dữ liệu
+
+    ' Xóa dữ liệu cũ (từ dòng startRowXa xuống dưới)
+    Dim lastRowXa As Long
+    lastRowXa = wsXa.Cells(wsXa.Rows.Count, "B").End(xlUp).Row
+    If lastRowXa >= startRowXa Then
+        wsXa.Range(wsXa.Cells(startRowXa, 1), wsXa.Cells(lastRowXa, 13)).ClearContents
+        wsXa.Range(wsXa.Cells(startRowXa, 1), wsXa.Cells(lastRowXa, 13)).Borders.LineStyle = xlNone
+    End If
+
+    ' Cập nhật công thức và định dạng
+    For i = 3 To lastRowHV
+        Dim curRowXa As Long
+        curRowXa = startRowXa + (i - 3)
+
+        ' Áp dụng công thức (Dựa trên cấu trúc tham khảo)
+        wsXa.Cells(curRowXa, 1).Formula = "='Thông tin HV'!A" & i ' STT
+        wsXa.Cells(curRowXa, 2).Formula = "=LEFT('Thông tin HV'!C" & i & ", FIND("" "", 'Thông tin HV'!C" & i & ") - 1)" ' Họ
+        wsXa.Cells(curRowXa, 3).Formula = "=MID('Thông tin HV'!C" & i & ", FIND("" "", 'Thông tin HV'!C" & i & ") + 1, LEN('Thông tin HV'!C" & i & "))" ' Tên
+        wsXa.Cells(curRowXa, 4).Formula = "='Thông tin HV'!D" & i ' Ngày sinh
+        wsXa.Cells(curRowXa, 5).Formula = "='Thông tin HV'!E" & i ' Giới tính
+        wsXa.Cells(curRowXa, 6).Formula = "='Thông tin HV'!J" & i ' Dân tộc
+        wsXa.Cells(curRowXa, 7).Formula = "='Thông tin HV'!K" & i ' Tôn giáo
+        wsXa.Cells(curRowXa, 8).Formula = "='Thông tin HV'!F" & i ' CCCD
+        wsXa.Cells(curRowXa, 9).Formula = "='Thông tin HV'!L" & i & "&""/12""" ' Trình độ VH
+        wsXa.Cells(curRowXa, 10).Formula = "='Thông tin HV'!M" & i ' Đối tượng
+        wsXa.Cells(curRowXa, 11).Formula = "='Thông tin HV'!O" & i ' Chỗ ở hiện nay
+        wsXa.Cells(curRowXa, 12).Formula = "='Thông tin HV'!P" & i ' Hộ khẩu thường trú
+        wsXa.Cells(curRowXa, 13).Formula = "='Thông tin HV'!R" & i ' Ghi chú (nếu có)
+
+        ' Kẻ khung (Borders)
+        wsXa.Range(wsXa.Cells(curRowXa, 1), wsXa.Cells(curRowXa, 13)).Borders.LineStyle = xlContinuous
+    Next i
+
+    ' ----------------------------------------------------
+    ' 2. Xử lý sheet DSTN-TT
+    ' ----------------------------------------------------
+    startRowTT = 8 ' Dòng bắt đầu ghi dữ liệu
+
+    ' Xóa dữ liệu cũ
+    Dim lastRowTT As Long
+    lastRowTT = wsTT.Cells(wsTT.Rows.Count, "B").End(xlUp).Row
+    If lastRowTT >= startRowTT Then
+        wsTT.Range(wsTT.Cells(startRowTT, 1), wsTT.Cells(lastRowTT, 13)).ClearContents
+        wsTT.Range(wsTT.Cells(startRowTT, 1), wsTT.Cells(lastRowTT, 13)).Borders.LineStyle = xlNone
+    End If
+
+    ' Cập nhật công thức và định dạng
+    For i = 3 To lastRowHV
+        Dim curRowTT As Long
+        curRowTT = startRowTT + (i - 3)
+
+        wsTT.Cells(curRowTT, 1).Formula = "='Thông tin HV'!A" & i ' STT
+        wsTT.Cells(curRowTT, 2).Formula = "=LEFT('Thông tin HV'!C" & i & ", FIND("" "", 'Thông tin HV'!C" & i & ") - 1)" ' Họ
+        wsTT.Cells(curRowTT, 3).Formula = "=MID('Thông tin HV'!C" & i & ", FIND("" "", 'Thông tin HV'!C" & i & ") + 1, LEN('Thông tin HV'!C" & i & "))" ' Tên
+        wsTT.Cells(curRowTT, 4).Formula = "='Thông tin HV'!D" & i ' Ngày sinh
+        wsTT.Cells(curRowTT, 5).Formula = "='Thông tin HV'!E" & i ' Giới tính
+        wsTT.Cells(curRowTT, 6).Formula = "='Thông tin HV'!J" & i ' Dân tộc
+        wsTT.Cells(curRowTT, 7).Formula = "='Thông tin HV'!K" & i ' Tôn giáo
+        wsTT.Cells(curRowTT, 8).Formula = "='Thông tin HV'!F" & i ' CCCD
+        wsTT.Cells(curRowTT, 9).Formula = "='Thông tin HV'!L" & i & "&""/12""" ' Trình độ VH
+        wsTT.Cells(curRowTT, 10).Formula = "='Thông tin HV'!N" & i ' Chính sách hỗ trợ
+        wsTT.Cells(curRowTT, 11).Formula = "='Thông tin HV'!O" & i ' Chỗ ở hiện nay
+        wsTT.Cells(curRowTT, 12).Formula = "='Thông tin HV'!P" & i ' Hộ khẩu thường trú
+        wsTT.Cells(curRowTT, 13).Formula = "='Thông tin HV'!R" & i ' Ghi chú (nếu có)
+
+        ' Kẻ khung (Borders)
+        wsTT.Range(wsTT.Cells(curRowTT, 1), wsTT.Cells(curRowTT, 13)).Borders.LineStyle = xlContinuous
+    Next i
+
+    ' ----------------------------------------------------
+    ' 3. Xử lý sheet Công nhận tốt nghiệp
+    ' ----------------------------------------------------
+    startRowCN = 7 ' Dòng bắt đầu ghi dữ liệu
+
+    ' Xóa dữ liệu cũ
+    Dim lastRowCN As Long
+    lastRowCN = wsCN.Cells(wsCN.Rows.Count, "A").End(xlUp).Row
+    If lastRowCN >= startRowCN Then
+        wsCN.Range(wsCN.Cells(startRowCN, 1), wsCN.Cells(lastRowCN, 11)).ClearContents
+        wsCN.Range(wsCN.Cells(startRowCN, 1), wsCN.Cells(lastRowCN, 11)).Borders.LineStyle = xlNone
+    End If
+
+    ' Cập nhật công thức và định dạng
+    For i = 3 To lastRowHV
+        Dim curRowCN As Long
+        curRowCN = startRowCN + (i - 3)
+
+        wsCN.Cells(curRowCN, 1).Formula = "='Thông tin HV'!A" & i ' STT
+        wsCN.Cells(curRowCN, 2).Formula = "=LEFT('Thông tin HV'!C" & i & ", FIND("" "", 'Thông tin HV'!C" & i & ") - 1)" ' Họ
+        wsCN.Cells(curRowCN, 3).Formula = "=MID('Thông tin HV'!C" & i & ", FIND("" "", 'Thông tin HV'!C" & i & ") + 1, LEN('Thông tin HV'!C" & i & "))" ' Tên
+        wsCN.Cells(curRowCN, 4).Formula = "='Thông tin HV'!D" & i ' Ngày sinh
+        wsCN.Cells(curRowCN, 5).Formula = "='Thông tin HV'!P" & i ' Nơi sinh / Nơi ở
+        wsCN.Cells(curRowCN, 6).Formula = "='Thông tin HV'!P" & i ' Hộ khẩu
+
+        ' Cột điểm nếu có (mặc định trỏ sang sheet Xét KT MĐ hoặc Điểm MĐ nếu có dữ liệu, ở đây để trống hoặc tham chiếu tạm)
+        ' wsCN.Cells(curRowCN, 7).Value = "" ' Lý thuyết
+        ' wsCN.Cells(curRowCN, 8).Value = "" ' Thực hành
+
+        ' Ghi chú
+        wsCN.Cells(curRowCN, 11).Formula = "='Thông tin HV'!R" & i ' Ghi chú (nếu có)
+
+        ' Kẻ khung (Borders)
+        wsCN.Range(wsCN.Cells(curRowCN, 1), wsCN.Cells(curRowCN, 11)).Borders.LineStyle = xlContinuous
+    Next i
+
+    ' Bật lại các tính năng
+    Application.Calculation = xlCalculationAutomatic
+    Application.ScreenUpdating = True
+
+    MsgBox "Đã cập nhật danh sách thành công!", vbInformation, "Hoàn tất"
+
+End Sub
