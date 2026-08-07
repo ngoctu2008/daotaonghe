@@ -12,12 +12,12 @@
 
   /* Navbar styling */
   .navbar {
-    background-color: transparent;
+    background-color: rgba(0, 0, 0, 0.4);
     transition: all 0.3s ease;
     padding: 15px 0;
   }
   .navbar.navbar-scrolled {
-    background-color: rgba(255, 255, 255, 0.95);
+    background-color: rgba(255, 255, 255, 1);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     box-shadow: 0 2px 15px rgba(0,0,0,0.08);
@@ -25,8 +25,8 @@
   }
   .navbar-brand {
     font-weight: bold;
-    color: white !important;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    color: #ffffff !important;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.8);
     transition: color 0.3s ease;
   }
   .navbar.navbar-scrolled .navbar-brand {
@@ -34,13 +34,13 @@
     text-shadow: none;
   }
   .nav-link {
-    color: rgba(255,255,255,0.9) !important;
-    font-weight: 500;
+    color: #ffffff !important;
+    font-weight: 600;
     transition: all 0.3s;
-    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    text-shadow: 0 2px 4px rgba(0,0,0,0.8);
   }
   .navbar.navbar-scrolled .nav-link {
-    color: #555 !important;
+    color: #111111 !important;
     text-shadow: none;
   }
   .nav-link:hover, .nav-link.active {
@@ -80,7 +80,7 @@
     width: 100%;
     height: 100%;
     /* Gradient tối màu xanh đen để hiệu ứng Bloom nổi bật */
-    background: linear-gradient(135deg, rgba(4, 21, 63, 0.6) 0%, rgba(0, 10, 25, 0.8) 100%);
+    background: linear-gradient(135deg, rgba(2, 10, 30, 0.8) 0%, rgba(0, 5, 15, 0.95) 100%);
     z-index: 1;
     pointer-events: none; /* Để canvas 3D bên dưới nhận được sự kiện chuột (Parallax) */
   }
@@ -273,17 +273,21 @@
 
   /* Footer */
   footer {
-    background-color: #212529;
-    color: #adb5bd;
+    background-color: #0b132b;
+    color: #f8f9fa;
     padding: 50px 0 20px;
   }
   footer h5 {
-    color: white;
+    color: #ffffff;
     margin-bottom: 20px;
+    font-weight: 700;
+  }
+  footer p.text-muted {
+    color: #e2e8f0 !important;
   }
   .footer-contact i {
     margin-right: 10px;
-    color: var(--primary-blue);
+    color: #3d8bfd; /* Lighter blue for better contrast on dark background */
   }
 
   /* Responsive */
