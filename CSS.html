@@ -45,14 +45,27 @@
     text-align: center;
   }
 
+  /* WebGL 3D Canvas container */
+  #hero-canvas-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    overflow: hidden;
+  }
+
   .hero-overlay {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: linear-gradient(135deg, rgba(13, 110, 253, 0.85) 0%, rgba(10, 88, 202, 0.9) 100%);
+    /* Gradient tối màu xanh đen để hiệu ứng Bloom nổi bật */
+    background: linear-gradient(135deg, rgba(4, 21, 63, 0.6) 0%, rgba(0, 10, 25, 0.8) 100%);
     z-index: 1;
+    pointer-events: none; /* Để canvas 3D bên dưới nhận được sự kiện chuột (Parallax) */
   }
 
   .btn-hero {

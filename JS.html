@@ -38,4 +38,105 @@
       });
     });
   });
+
+  // Khởi tạo hiệu ứng nền 3D với Three.js
+  function initThreeJSHero() {
+    var container = document.getElementById('hero-canvas-container');
+    if (!container || typeof THREE === 'undefined') return;
+
+    // Scene, Camera, Renderer
+    var scene = new THREE.Scene();
+    var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    var renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    container.appendChild(renderer.domElement);
+
+    // Tạo Mesh lưới (PlaneGeometry) dạng sóng
+    var geometry = new THREE.PlaneGeometry(100, 100, 40, 40);
+    // Tính toán đỉnh ban đầu
+    var count = geometry.attributes.position.count;
+    for (var i = 0; i < count; i++) {
+      var x = geometry.attributes.position.getX(i);
+      var y = geometry.attributes.position.getY(i);
+      // Tạo đường cong nhẹ ban đầu
+      geometry.attributes.position.setZ(i, Math.sin(x/5) * Math.cos(y/5) * 2);
+    }
+
+    // Vật liệu dưới dạng điểm sáng (PointsMaterial) tạo hiệu ứng hạt/Glow
+    var material = new THREE.PointsMaterial({
+      color: 0x0d6efd, // Màu xanh primary
+      size: 0.3,
+      transparent: true,
+      opacity: 0.8,
+      blending: THREE.AdditiveBlending // Hiệu ứng sáng (Bloom) khi các hạt chồng lên nhau
+    });
+
+    var particlesMesh = new THREE.Points(geometry, material);
+    // Xoay lưới nằm ngang
+    particlesMesh.rotation.x = -Math.PI / 2 + 0.3;
+    particlesMesh.position.y = -10;
+    scene.add(particlesMesh);
+
+    camera.position.z = 25;
+    camera.position.y = 5;
+
+    // Hiệu ứng Parallax theo chuột
+    var mouseX = 0;
+    var mouseY = 0;
+    var targetX = 0;
+    var targetY = 0;
+
+    var windowHalfX = window.innerWidth / 2;
+    var windowHalfY = window.innerHeight / 2;
+
+    document.addEventListener('mousemove', function(event) {
+      mouseX = (event.clientX - windowHalfX) * 0.05;
+      mouseY = (event.clientY - windowHalfY) * 0.05;
+    });
+
+    // Resize window
+    window.addEventListener('resize', function() {
+      windowHalfX = window.innerWidth / 2;
+      windowHalfY = window.innerHeight / 2;
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // Animation Loop
+    var clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      var time = clock.getElapsedTime();
+
+      // Sóng nước nhấp nhô (Wave mesh)
+      var positions = particlesMesh.geometry.attributes.position;
+      for (var i = 0; i < count; i++) {
+        var x = positions.getX(i);
+        var y = positions.getY(i);
+        // Đường cong chuyển động sử dụng Sine/Cosine
+        var z = Math.sin(x/5 + time) * Math.cos(y/5 + time) * 2;
+        positions.setZ(i, z);
+      }
+      positions.needsUpdate = true;
+
+      // Parallax Camera
+      targetX = mouseX * 0.1;
+      targetY = mouseY * 0.1;
+
+      camera.position.x += (targetX - camera.position.x) * 0.05;
+      camera.position.y += (-targetY - camera.position.y + 5) * 0.05;
+      camera.lookAt(scene.position);
+
+      renderer.render(scene, camera);
+    }
+
+    animate();
+  }
+
+  // Khởi động Three.js khi tải xong trang
+  window.addEventListener('load', initThreeJSHero);
 </script>
