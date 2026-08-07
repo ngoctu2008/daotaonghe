@@ -121,7 +121,7 @@ function doGet(e) {
   template.data = data; // Truyền dữ liệu vào template
 
   return template.evaluate()
-      .setTitle('Hồ sơ năng lực đào tạo nghề - TT GDNN-GDTX Đăk Tô')
+      .setTitle('Hồ sơ năng lực đào tạo nghề - TT GDNN-GDTX khu vực Đăk Hà')
       .addMetaTag('viewport', 'width=device-width, initial-scale=1')
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
