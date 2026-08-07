@@ -1,74 +1,74 @@
 function doGet(e) {
-  // Hàm tạo dữ liệu mock cho 26 nghề
-  function taoDanhSach26Nghe() {
+  // Hàm tạo dữ liệu mock danh sách nghề thực tế
+  function taoDanhSachNghe() {
+    var rawList = [
+      // Nhóm nghề phi nông nghiệp
+      { ten: "Hàn điện", trinhDo: "Sơ cấp", thoiGian: "3 tháng", icon: "fa-fire" },
+      { ten: "Vận hành, sửa chữa máy nông nghiệp", trinhDo: "Sơ cấp", thoiGian: "3 tháng", icon: "fa-tractor" },
+      { ten: "Vận hành máy kéo nông nghiệp", trinhDo: "Dưới 3 tháng", thoiGian: "1 tháng", icon: "fa-truck-pickup" },
+      { ten: "Nề - Hoàn thiện", trinhDo: "Sơ cấp", thoiGian: "3 tháng", icon: "fa-hard-hat" },
+      // Nhóm nghề nông nghiệp
+      { ten: "Trồng rau an toàn", trinhDo: "Dưới 3 tháng", thoiGian: "2 tháng", icon: "fa-leaf" },
+      { ten: "Trồng dâu - nuôi tằm", trinhDo: "Dưới 3 tháng", thoiGian: "2 tháng", icon: "fa-bug" },
+      { ten: "Trồng và chăm sóc cây mắc ca", trinhDo: "Dưới 3 tháng", thoiGian: "1 tháng", icon: "fa-tree" },
+      { ten: "Trồng keo, bạch đàn, thông làm nguyên liệu giấy", trinhDo: "Dưới 3 tháng", thoiGian: "1 tháng", icon: "fa-tree" },
+      { ten: "Trồng và chăm sóc cây sầu riêng", trinhDo: "Dưới 3 tháng", thoiGian: "1 tháng", icon: "fa-tree" },
+      { ten: "Trồng nấm sò", trinhDo: "Dưới 3 tháng", thoiGian: "1 tháng", icon: "fa-seedling" },
+      { ten: "Trồng, chăm sóc sâm Ngọc Linh", trinhDo: "Dưới 3 tháng", thoiGian: "1 tháng", icon: "fa-leaf" },
+      { ten: "Trồng và chăm sóc cà phê vối", trinhDo: "Dưới 3 tháng", thoiGian: "1 tháng", icon: "fa-coffee" },
+      { ten: "Trồng và chăm sóc cây cà phê (Catimor)", trinhDo: "Dưới 3 tháng", thoiGian: "1 tháng", icon: "fa-coffee" },
+      { ten: "Trồng và chăm sóc cây cà phê", trinhDo: "Dưới 3 tháng", thoiGian: "2 tháng", icon: "fa-coffee" },
+      { ten: "Nuôi và phòng trị bệnh cho trâu bò", trinhDo: "Dưới 3 tháng", thoiGian: "2 tháng", icon: "fa-hippo" },
+      { ten: "Nuôi và phòng trị bệnh cho lợn", trinhDo: "Dưới 3 tháng", thoiGian: "2 tháng", icon: "fa-piggy-bank" },
+      { ten: "Nuôi và phòng trị bệnh cho gà", trinhDo: "Dưới 3 tháng", thoiGian: "2 tháng", icon: "fa-kiwi-bird" },
+      { ten: "Nuôi và phòng trị bệnh cho dê", trinhDo: "Dưới 3 tháng", thoiGian: "1 tháng", icon: "fa-paw" },
+      { ten: "Nuôi dúi", trinhDo: "Dưới 3 tháng", thoiGian: "1 tháng", icon: "fa-paw" },
+      { ten: "Cạo mủ cao su", trinhDo: "Dưới 3 tháng", thoiGian: "1 tháng", icon: "fa-tint" },
+      { ten: "Quản lý và sử dụng thuốc bảo vệ thực vật", trinhDo: "Dưới 3 tháng", thoiGian: "1 tháng", icon: "fa-spray-can" }
+    ];
+
     var danhSachNghe = [];
-    var tenNgheGiaDinh = [
-      "Vận hành, sửa chữa máy nông nghiệp", "Kỹ thuật Xây dựng (Nề hoàn thiện)", "Điện dân dụng",
-      "Sửa chữa xe máy", "Kỹ thuật chăn nuôi thú y", "Trồng trọt và bảo vệ thực vật",
-      "Hàn điện - Cắt kim loại", "Tin học văn phòng cơ bản", "May công nghiệp",
-      "Kỹ thuật chế biến món ăn", "Pha chế đồ uống (Bartender)", "Chăm sóc sắc đẹp (Spa)",
-      "Kỹ thuật sửa chữa điện lạnh", "Vận hành máy xúc, máy đào", "Lái xe nâng hàng",
-      "Thiết kế đồ họa cơ bản", "Kỹ thuật điện tử công nghiệp", "Sửa chữa điện thoại",
-      "Gia công mộc mỹ nghệ", "Kỹ thuật trồng nấm", "Trồng hoa, cây cảnh",
-      "Bảo trì thiết bị cơ điện", "Quản lý doanh nghiệp nhỏ", "Kỹ năng bán hàng siêu thị",
-      "Tiếng Anh giao tiếp nghề nghiệp", "Tiếng Hàn lao động xuất khẩu"
-    ];
 
-    var iconList = [
-      "fa-tractor", "fa-hard-hat", "fa-bolt", "fa-motorcycle", "fa-paw", "fa-seedling",
-      "fa-fire", "fa-laptop", "fa-tshirt", "fa-utensils", "fa-glass-martini", "fa-spa",
-      "fa-snowflake", "fa-truck-pickup", "fa-truck-loading", "fa-palette", "fa-microchip", "fa-mobile-alt",
-      "fa-hammer", "fa-tree", "fa-leaf", "fa-cogs", "fa-chart-line", "fa-shopping-cart",
-      "fa-language", "fa-globe-asia"
-    ];
-
-    for (var i = 0; i < 26; i++) {
+    for (var i = 0; i < rawList.length; i++) {
+      var item = rawList[i];
       danhSachNghe.push({
-        tenNganh: tenNgheGiaDinh[i],
-        trinhDo: "Sơ cấp bậc 1",
-        chuanDauRa: "Chứng chỉ nghề sơ cấp bậc 1 - Thực hành " + (242) + " giờ.",
-        thucHanh: "Thực hành 75.6%",
-        icon: iconList[i],
-        // Chi tiết chuẩn đầu ra theo yêu cầu của bạn
+        tenNganh: item.ten,
+        trinhDo: item.trinhDo,
+        chuanDauRa: item.trinhDo === "Sơ cấp" ? "Chứng chỉ sơ cấp nghề" : "Chứng chỉ đào tạo dưới 3 tháng",
+        thucHanh: "Thực hành > 70%",
+        icon: item.icon,
         chiTiet: {
           tongQuan: {
-            maNghe: "55201" + (87 + i).toString(), // Mã tự tăng để khác biệt
-            trinhDoDaoTao: "Sơ cấp bậc 1",
-            thoiGian: "3 tháng (14 tuần)",
-            khoiLuong: "03 Mô đun",
-            doiTuong: "Từ 15 tuổi trở lên, biết đọc, biết viết, sức khỏe phù hợp",
-            vanBang: "Chứng chỉ nghề sơ cấp bậc 1",
-            canCu: "Quyết định số 41/QĐ-GDNN-GDTX (04/06/2024 - TT GDNN – GDTX Đăk Hà)"
+            maNghe: "55201" + (50 + i).toString(),
+            trinhDoDaoTao: item.trinhDo,
+            thoiGian: item.thoiGian,
+            khoiLuong: "Cơ bản",
+            doiTuong: "Từ 15 tuổi trở lên, sức khỏe phù hợp",
+            vanBang: item.trinhDo === "Sơ cấp" ? "Chứng chỉ sơ cấp" : "Chứng chỉ đào tạo",
+            canCu: "Quyết định phê duyệt chương trình đào tạo TT GDNN-GDTX khu vực Đăk Hà"
           },
           mucTieu: {
             kienThuc: [
-              "Nắm vững nguyên lý hoạt động, cấu tạo của thiết bị và hệ thống liên quan.",
-              "Nhận diện hiện tượng, nguyên nhân hư hỏng và nắm rõ quy trình kiểm tra, bảo dưỡng.",
-              "Hiểu rõ cấu tạo, nhiệm vụ các bộ phận và phương pháp điều khiển, vận hành.",
-              "Nắm vững sơ đồ cấu tạo, nguyên lý làm việc và trình tự chẩn đoán, sửa chữa."
+              "Nắm vững kiến thức cơ bản và nguyên lý của nghề.",
+              "Hiểu rõ các biện pháp an toàn và bảo hộ lao động."
             ],
             kyNang: [
-              "Thực hiện tháo lắp, kiểm tra, bảo dưỡng đúng yêu cầu kỹ thuật.",
-              "Vận hành an toàn và chuẩn kỹ thuật trên các điều kiện khác nhau.",
-              "Xử lý, sửa chữa các hư hỏng thông thường; lựa chọn phương pháp tối ưu.",
-              "Phân tích, đánh giá các dạng sai hỏng, tìm ra nguyên nhân và phòng ngừa."
+              "Thực hiện thành thạo các thao tác thực hành cơ bản.",
+              "Vận dụng kỹ năng vào thực tế sản xuất, canh tác hoặc sửa chữa."
             ],
             nangLuc: [
-              "Kỹ năng ghi chép, tiếp nhận thông tin và làm việc nhóm hiệu quả.",
-              "Tác phong công nghiệp chuẩn mực, dễ thích nghi tại cơ sở làm việc.",
-              "Chủ động tự học, trau dồi tay nghề và nâng cao kinh nghiệm.",
-              "Tuân thủ tuyệt đối an toàn lao động cho người và thiết bị."
+              "Chủ động, kỷ luật trong quá trình làm việc.",
+              "Thích ứng tốt với môi trường lao động tại địa phương."
             ],
             viecLam: [
-              "Làm việc tại các phân xưởng, nhà máy, công ty chuyên ngành.",
-              "Đủ năng lực tự tổ chức sản xuất kinh doanh, cung cấp dịch vụ tại địa phương."
+              "Làm việc tại các cơ sở, trang trại, doanh nghiệp địa phương.",
+              "Tự tạo việc làm, phát triển kinh tế hộ gia đình."
             ]
           },
           thoiGian: [
-            { hangMuc: "Thực hành", thoiLuong: 242, tyLe: "75.6%" },
-            { hangMuc: "Lý thuyết", thoiLuong: 29, tyLe: "9.1%" },
-            { hangMuc: "Kiểm tra định kỳ / Kết thúc Mô đun", thoiLuong: 25, tyLe: "7.8%" },
-            { hangMuc: "Tự học", thoiLuong: 24, tyLe: "7.5%" }
+            { hangMuc: "Thực hành", thoiLuong: "Chiếm phần lớn", tyLe: "~ 75%" },
+            { hangMuc: "Lý thuyết", thoiLuong: "Phần cơ sở", tyLe: "~ 15%" },
+            { hangMuc: "Kiểm tra định kỳ", thoiLuong: "Theo quy định", tyLe: "~ 10%" }
           ]
         }
       });
@@ -78,7 +78,7 @@ function doGet(e) {
 
   // Dữ liệu Mock Data (JSON)
   var data = {
-    chuongTrinhDaoTao: taoDanhSach26Nghe(),
+    chuongTrinhDaoTao: taoDanhSachNghe(),
     doiNguNhanSu: [
       {
         tieuDe: "Cán bộ, Giáo viên",
