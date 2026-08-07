@@ -103,22 +103,125 @@
 
           <!-- Modal for each course -->
           <div class="modal fade" id="modal-<?= i ?>" tabindex="-1" aria-labelledby="modalLabel-<?= i ?>" aria-hidden="true">
-            <div class="modal-dialog">
+            <div class="modal-dialog modal-xl modal-dialog-scrollable">
               <div class="modal-content">
                 <div class="modal-header bg-primary text-white">
-                  <h5 class="modal-title" id="modalLabel-<?= i ?>"><?= data.chuongTrinhDaoTao[i].tenNganh ?></h5>
+                  <h5 class="modal-title text-uppercase fw-bold" id="modalLabel-<?= i ?>"><i class="fas fa-book-open me-2"></i> CHUẨN ĐẦU RA: <?= data.chuongTrinhDaoTao[i].tenNganh ?></h5>
                   <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body">
-                  <h6><strong>Chi tiết nội dung học:</strong></h6>
-                  <ul class="list-group list-group-flush">
-                    <? for (var p = 0; p < data.chuongTrinhDaoTao[i].chiTiet.length; p++) { ?>
-                      <li class="list-group-item"><i class="fas fa-check text-success me-2"></i><?= data.chuongTrinhDaoTao[i].chiTiet[p] ?></li>
-                    <? } ?>
-                  </ul>
+                <div class="modal-body bg-light p-4">
+
+                  <!-- Thông tin Tổng quan -->
+                  <div class="mb-4 bg-white p-3 rounded shadow-sm">
+                    <h6 class="text-primary fw-bold border-bottom pb-2 mb-3"><i class="fas fa-info-circle me-2"></i> THÔNG TIN TỔNG QUAN</h6>
+                    <div class="table-responsive">
+                      <table class="table table-bordered table-striped align-middle mb-0">
+                        <tbody>
+                          <tr>
+                            <td class="fw-bold" style="width: 30%;">Tên nghề</td>
+                            <td><?= data.chuongTrinhDaoTao[i].tenNganh ?></td>
+                          </tr>
+                          <tr>
+                            <td class="fw-bold">Mã nghề</td>
+                            <td><?= data.chuongTrinhDaoTao[i].chiTiet.tongQuan.maNghe ?></td>
+                          </tr>
+                          <tr>
+                            <td class="fw-bold">Trình độ đào tạo</td>
+                            <td><?= data.chuongTrinhDaoTao[i].chiTiet.tongQuan.trinhDoDaoTao ?></td>
+                          </tr>
+                          <tr>
+                            <td class="fw-bold">Thời gian đào tạo</td>
+                            <td><?= data.chuongTrinhDaoTao[i].chiTiet.tongQuan.thoiGian ?></td>
+                          </tr>
+                          <tr>
+                            <td class="fw-bold">Khối lượng kiến thức</td>
+                            <td><?= data.chuongTrinhDaoTao[i].chiTiet.tongQuan.khoiLuong ?></td>
+                          </tr>
+                          <tr>
+                            <td class="fw-bold">Đối tượng tuyển sinh</td>
+                            <td><?= data.chuongTrinhDaoTao[i].chiTiet.tongQuan.doiTuong ?></td>
+                          </tr>
+                          <tr>
+                            <td class="fw-bold">Văn bằng tốt nghiệp</td>
+                            <td><?= data.chuongTrinhDaoTao[i].chiTiet.tongQuan.vanBang ?></td>
+                          </tr>
+                          <tr>
+                            <td class="fw-bold">Căn cứ ban hành</td>
+                            <td class="text-muted fst-italic"><?= data.chuongTrinhDaoTao[i].chiTiet.tongQuan.canCu ?></td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <!-- Mục tiêu đào tạo -->
+                  <div class="mb-4 bg-white p-3 rounded shadow-sm">
+                    <h6 class="text-primary fw-bold border-bottom pb-2 mb-3"><i class="fas fa-bullseye me-2"></i> I. MỤC TIÊU ĐÀO TẠO</h6>
+
+                    <h6 class="fw-bold text-dark mt-3">1. Về Kiến thức</h6>
+                    <ul class="modal-list">
+                      <? for (var k = 0; k < data.chuongTrinhDaoTao[i].chiTiet.mucTieu.kienThuc.length; k++) { ?>
+                        <li><i class="fas fa-check text-success"></i> <?= data.chuongTrinhDaoTao[i].chiTiet.mucTieu.kienThuc[k] ?></li>
+                      <? } ?>
+                    </ul>
+
+                    <h6 class="fw-bold text-dark mt-3">2. Về Kỹ năng</h6>
+                    <ul class="modal-list">
+                      <? for (var kn = 0; kn < data.chuongTrinhDaoTao[i].chiTiet.mucTieu.kyNang.length; kn++) { ?>
+                        <li><i class="fas fa-check text-success"></i> <?= data.chuongTrinhDaoTao[i].chiTiet.mucTieu.kyNang[kn] ?></li>
+                      <? } ?>
+                    </ul>
+
+                    <h6 class="fw-bold text-dark mt-3">3. Về Năng lực tự chủ và trách nhiệm</h6>
+                    <ul class="modal-list">
+                      <? for (var nl = 0; nl < data.chuongTrinhDaoTao[i].chiTiet.mucTieu.nangLuc.length; nl++) { ?>
+                        <li><i class="fas fa-check text-success"></i> <?= data.chuongTrinhDaoTao[i].chiTiet.mucTieu.nangLuc[nl] ?></li>
+                      <? } ?>
+                    </ul>
+
+                    <h6 class="fw-bold text-dark mt-3">4. Cơ hội việc làm</h6>
+                    <ul class="modal-list mb-0">
+                      <? for (var vl = 0; vl < data.chuongTrinhDaoTao[i].chiTiet.mucTieu.viecLam.length; vl++) { ?>
+                        <li><i class="fas fa-check text-success"></i> <?= data.chuongTrinhDaoTao[i].chiTiet.mucTieu.viecLam[vl] ?></li>
+                      <? } ?>
+                    </ul>
+                  </div>
+
+                  <!-- Phân bổ thời gian -->
+                  <div class="bg-white p-3 rounded shadow-sm">
+                    <h6 class="text-primary fw-bold border-bottom pb-2 mb-3"><i class="fas fa-clock me-2"></i> II. PHÂN BỔ THỜI GIAN KHÓA HỌC</h6>
+                    <p class="text-muted small">Tổng thời gian toàn khóa là 320 giờ, trong đó thời gian thực học chiếm tỷ trọng lớn nhằm bám sát tiêu chí "học đi đôi với hành".</p>
+                    <div class="table-responsive">
+                      <table class="table table-bordered text-center align-middle mb-0 table-hover">
+                        <thead class="table-light">
+                          <tr>
+                            <th>Hạng mục nội dung</th>
+                            <th>Thời lượng (Giờ)</th>
+                            <th>Tỷ lệ (%)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <? for (var t = 0; t < data.chuongTrinhDaoTao[i].chiTiet.thoiGian.length; t++) { ?>
+                            <tr class="<?= data.chuongTrinhDaoTao[i].chiTiet.thoiGian[t].hangMuc === 'Thực hành' ? 'table-success' : '' ?>">
+                              <td class="text-start fw-bold"><?= data.chuongTrinhDaoTao[i].chiTiet.thoiGian[t].hangMuc ?></td>
+                              <td><?= data.chuongTrinhDaoTao[i].chiTiet.thoiGian[t].thoiLuong ?></td>
+                              <td><span class="badge bg-secondary"><?= data.chuongTrinhDaoTao[i].chiTiet.thoiGian[t].tyLe ?></span></td>
+                            </tr>
+                          <? } ?>
+                          <tr class="table-primary fw-bold">
+                            <td class="text-start">Tổng thời gian thực học tối thiểu</td>
+                            <td>320</td>
+                            <td>100%</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                    <p class="text-danger small mt-2 fst-italic mb-0">* (Ghi chú: Ngoài quỹ thời gian trên, chương trình bố trí riêng 01 tuần dành cho công tác khai giảng, bế giảng và các hoạt động dự phòng).</p>
+                  </div>
+
                 </div>
                 <div class="modal-footer">
-                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                  <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Đóng</button>
                 </div>
               </div>
             </div>
