@@ -12,23 +12,40 @@
 
   /* Navbar styling */
   .navbar {
-    background-color: rgba(255, 255, 255, 0.85);
+    background-color: transparent;
+    transition: all 0.3s ease;
+    padding: 15px 0;
+  }
+  .navbar.navbar-scrolled {
+    background-color: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     box-shadow: 0 2px 15px rgba(0,0,0,0.08);
-    transition: all 0.3s ease;
+    padding: 10px 0;
   }
   .navbar-brand {
     font-weight: bold;
+    color: white !important;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    transition: color 0.3s ease;
+  }
+  .navbar.navbar-scrolled .navbar-brand {
     color: var(--primary-blue) !important;
+    text-shadow: none;
   }
   .nav-link {
-    color: #555;
+    color: rgba(255,255,255,0.9) !important;
     font-weight: 500;
-    transition: color 0.3s;
+    transition: all 0.3s;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+  }
+  .navbar.navbar-scrolled .nav-link {
+    color: #555 !important;
+    text-shadow: none;
   }
   .nav-link:hover, .nav-link.active {
-    color: var(--primary-blue);
+    color: var(--primary-blue) !important;
+    transform: translateY(-2px);
   }
 
   /* Hero Section */
@@ -123,18 +140,19 @@
   }
 
   /* Section 1: Giới thiệu & Pháp lý */
-  .legal-list {
-    list-style: none;
-    padding-left: 0;
+  .intro-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
   }
-  .legal-list li {
-    margin-bottom: 15px;
-    font-size: 1.1rem;
+  .intro-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;
   }
-  .legal-list i {
-    color: var(--primary-blue);
-    margin-right: 10px;
-    font-size: 1.2rem;
+  .legal-box {
+    transition: all 0.3s ease;
+  }
+  .legal-box:hover {
+    transform: translateX(5px);
+    border-color: var(--primary-blue) !important;
   }
 
   /* Section 2: Chương trình đào tạo */
