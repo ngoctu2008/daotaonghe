@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hồ sơ năng lực đào tạo nghề - TT GDNN-GDTX khu vực Đăk Hà</title>
+
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- FontAwesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- AOS CSS -->
+  <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+
+  <!-- Chèn CSS tùy chỉnh từ file CSS.html -->
+  <?!= include('CSS'); ?>
+</head>
+<body data-bs-spy="scroll" data-bs-target="#main-navbar" data-bs-offset="100">
+
+  <!-- Header & Navigation (Sticky top) -->
+  <nav id="main-navbar" class="navbar navbar-expand-lg navbar-light sticky-top">
+    <div class="container">
+      <a class="navbar-brand d-flex align-items-center" href="#">
+        <i class="fas fa-graduation-cap fs-2 me-2"></i>
+        <span>TT GDNN-GDTX Đăk Hà</span>
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item"><a class="nav-link" href="#gioi-thieu">Giới thiệu & Pháp lý</a></li>
+          <li class="nav-item"><a class="nav-link" href="#dao-tao">Đào tạo</a></li>
+          <li class="nav-item"><a class="nav-link" href="#co-so-vat-chat">Cơ sở vật chất</a></li>
+          <li class="nav-item"><a class="nav-link" href="#nhan-su">Nhân sự & Đối tác</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <header class="hero-section" id="hero">
+    <!-- WebGL Three.js Container -->
+    <div id="hero-canvas-container"></div>
+
+    <div class="hero-overlay"></div>
+    <div class="hero-content container" data-aos="fade-up">
+      <h1 class="hero-title">HỒ SƠ NĂNG LỰC ĐÀO TẠO NGHỀ</h1>
+      <p class="hero-subtitle">Nâng tầm kỹ năng - Kiến tạo tương lai</p>
+      <a href="#dao-tao" class="btn btn-light btn-lg px-5 py-3 fw-bold rounded-pill text-primary btn-hero mt-3">Xem Chương Trình Đào Tạo</a>
+    </div>
+  </header>
+
+  <!-- Section 1: Giới thiệu chung & Năng lực pháp lý -->
+  <section id="gioi-thieu" class="py-5 bg-light-section">
+    <div class="container py-4">
+      <div class="text-center mb-5" data-aos="fade-up">
+        <h2 class="section-title">Giới thiệu & Pháp lý</h2>
+        <p class="lead text-muted">Hệ thống giáo dục đào tạo mở, linh hoạt và chuẩn mực.</p>
+      </div>
+
+      <div class="row g-5">
+        <!-- Cột Giới thiệu -->
+        <div class="col-lg-6" data-aos="fade-right">
+          <h4 class="fw-bold text-primary mb-4"><i class="fas fa-building me-2"></i> Giới thiệu chung</h4>
+
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="card intro-card h-100 p-3 border-0 shadow-sm rounded-4">
+                <div class="card-body">
+                  <div class="text-primary fs-3 mb-2"><i class="fas fa-info-circle"></i></div>
+                  <h6 class="fw-bold">Tên đơn vị & Loại hình</h6>
+                  <p class="small text-muted mb-0"><strong>Trung tâm GDNN-GDTX khu vực Đăk Hà.</strong><br>Đơn vị sự nghiệp công lập trực thuộc Sở GD&ĐT tỉnh Quảng Ngãi.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <div class="card intro-card h-100 p-3 border-0 shadow-sm rounded-4">
+                <div class="card-body">
+                  <div class="text-warning fs-3 mb-2"><i class="fas fa-history"></i></div>
+                  <h6 class="fw-bold">Lịch sử & Quy mô</h6>
+                  <p class="small text-muted mb-0">Thành lập 29/04/2026 sáp nhập 3 đơn vị: Đăk Hà, Đăk Tô, Tu Mơ Rông. Khai thác tối đa cơ sở vật chất khu vực.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-md-12">
+              <div class="card intro-card p-3 border-0 shadow-sm rounded-4 bg-primary text-white">
+                <div class="card-body">
+                  <h6 class="fw-bold"><i class="fas fa-rocket me-2"></i> Sứ mệnh & Tầm nhìn 2030</h6>
+                  <p class="small mb-2">Cung cấp cơ hội học tập linh hoạt, đào tạo nghề và phát triển kỹ năng cho thanh niên, người lao động.</p>
+                  <p class="small mb-0">Xây dựng Trung tâm thành cơ sở giáo dục mở, đa chức năng, nền tảng số; môi trường kỷ cương, an toàn, xanh và thân thiện.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-md-12">
+              <div class="alert alert-secondary border-0 d-flex align-items-center mb-0 rounded-4 shadow-sm" role="alert">
+                <i class="fas fa-star fs-4 text-warning me-3"></i>
+                <div>
+                  <h6 class="fw-bold mb-1">Giá trị cốt lõi</h6>
+                  <p class="small mb-0">Trách nhiệm - Kỷ cương - Hợp tác - Sáng tạo - Hiệu quả - Phục vụ người học.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cột Pháp lý -->
+        <div class="col-lg-6" data-aos="fade-left">
+          <h4 class="fw-bold text-primary mb-4"><i class="fas fa-balance-scale me-2"></i> Năng lực pháp lý</h4>
+          <p class="text-muted small fst-italic mb-4">Hoạt động tuân thủ chặt chẽ các quy định pháp luật về Giáo dục và Giáo dục nghề nghiệp.</p>
+
+          <div class="d-flex flex-column gap-3">
+            <!-- Box 1 -->
+            <div class="legal-box p-3 bg-white rounded-4 shadow-sm border-start border-4 border-success d-flex">
+              <div class="mt-1 me-3 text-success fs-5"><i class="fas fa-check-circle"></i></div>
+              <div>
+                <h6 class="fw-bold mb-1">Cơ sở Luật pháp</h6>
+                <p class="small text-muted mb-0">Luật Giáo dục số 43/2019/QH14 (sửa đổi 123/2025/QH15) & Luật Giáo dục nghề nghiệp số 124/2025/QH15.</p>
+              </div>
+            </div>
+
+            <!-- Box 2 -->
+            <div class="legal-box p-3 bg-white rounded-4 shadow-sm border-start border-4 border-success d-flex">
+              <div class="mt-1 me-3 text-success fs-5"><i class="fas fa-check-circle"></i></div>
+              <div>
+                <h6 class="fw-bold mb-1">Quyết định thành lập & Đề án</h6>
+                <p class="small text-muted mb-0">QĐ 286/QĐ-UBND (thành lập) & QĐ 285/QĐ-UBND (phê duyệt đề án sắp xếp) ngày 29/04/2026 của UBND tỉnh Quảng Ngãi.</p>
+              </div>
+            </div>
+
+            <!-- Box 3 -->
+            <div class="legal-box p-3 bg-white rounded-4 shadow-sm border-start border-4 border-success d-flex">
+              <div class="mt-1 me-3 text-success fs-5"><i class="fas fa-check-circle"></i></div>
+              <div>
+                <h6 class="fw-bold mb-1">Quy chế hoạt động</h6>
+                <p class="small text-muted mb-0">Thông tư 01/2023/TT-BGDĐT ngày 06/01/2023 ban hành Quy chế tổ chức và hoạt động Trung tâm GDNN-GDTX.</p>
+              </div>
+            </div>
+
+            <!-- Box 4 -->
+            <div class="legal-box p-3 bg-white rounded-4 shadow-sm border-start border-4 border-success d-flex">
+              <div class="mt-1 me-3 text-success fs-5"><i class="fas fa-check-circle"></i></div>
+              <div>
+                <h6 class="fw-bold mb-1">Cơ cấu bộ máy nội bộ</h6>
+                <p class="small text-muted mb-0">Quyết định 01 & 02/QĐ-GDNN-GDTX ngày 12/06/2026 của Giám đốc phân công tổ chuyên môn, nghiệp vụ.</p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 2: Chương trình đào tạo -->
+  <section id="dao-tao" class="py-5 bg-white">
+    <div class="container py-4">
+      <div class="text-center mb-5" data-aos="fade-up">
+        <h2 class="section-title">Chương trình đào tạo trọng tâm</h2>
+      </div>
+
+      <div class="row g-4">
+        <!-- Render dữ liệu từ server (Code.gs) -->
+        <? for (var i = 0; i < data.chuongTrinhDaoTao.length; i++) { ?>
+          <div class="col-md-4" data-aos="zoom-in" data-aos-delay="<?= i * 100 ?>">
+            <div class="card course-card text-center p-4">
+              <div class="course-icon-wrapper">
+                <i class="fas <?= data.chuongTrinhDaoTao[i].icon ?>"></i>
+              </div>
+              <h4 class="card-title text-primary fw-bold"><?= data.chuongTrinhDaoTao[i].tenNganh ?></h4>
+              <span class="badge bg-success mb-3 mx-auto" style="width: fit-content;"><?= data.chuongTrinhDaoTao[i].thucHanh ?></span>
+
+              <ul class="list-unstyled text-start mb-0">
+                <li class="mb-2"><strong><i class="fas fa-clock text-muted me-2"></i> Trình độ:</strong> <br><span class="ms-4"><?= data.chuongTrinhDaoTao[i].trinhDo ?></span></li>
+                <li><strong><i class="fas fa-bullseye text-muted me-2"></i> Chuẩn đầu ra:</strong> <br><span class="ms-4 text-muted"><?= data.chuongTrinhDaoTao[i].chuanDauRa ?></span></li>
+              </ul>
+              <!-- Button to trigger modal -->
+              <button type="button" class="btn btn-outline-primary mt-3" data-bs-toggle="modal" data-bs-target="#modal-<?= i ?>">
+                Xem chi tiết
+              </button>
+            </div>
+          </div>
+
+          <!-- Modal for each course -->
+          <div class="modal fade" id="modal-<?= i ?>" tabindex="-1" aria-labelledby="modalLabel-<?= i ?>" aria-hidden="true">
+            <div class="modal-dialog modal-xl modal-dialog-scrollable">
+              <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                  <h5 class="modal-title text-uppercase fw-bold" id="modalLabel-<?= i ?>"><i class="fas fa-book-open me-2"></i> CHUẨN ĐẦU RA: <?= data.chuongTrinhDaoTao[i].tenNganh ?></h5>
+                  <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body bg-light p-4">
+
+                  <!-- Thông tin Tổng quan -->
+                  <div class="mb-4 bg-white p-3 rounded shadow-sm">
+                    <h6 class="text-primary fw-bold border-bottom pb-2 mb-3"><i class="fas fa-info-circle me-2"></i> THÔNG TIN TỔNG QUAN</h6>
+                    <div class="table-responsive">
+                      <table class="table table-bordered table-striped align-middle mb-0">
+                        <tbody>
+                          <tr>
+                            <td class="fw-bold" style="width: 30%;">Tên nghề</td>
+                            <td><?= data.chuongTrinhDaoTao[i].tenNganh ?></td>
+                          </tr>
+                          <tr>
+                            <td class="fw-bold">Mã nghề</td>
+                            <td><?= data.chuongTrinhDaoTao[i].chiTiet.tongQuan.maNghe ?></td>
+                          </tr>
+                          <tr>
+                            <td class="fw-bold">Trình độ đào tạo</td>
+                            <td><?= data.chuongTrinhDaoTao[i].chiTiet.tongQuan.trinhDoDaoTao ?></td>
+                          </tr>
+                          <tr>
+                            <td class="fw-bold">Thời gian đào tạo</td>
+                            <td><?= data.chuongTrinhDaoTao[i].chiTiet.tongQuan.thoiGian ?></td>
+                          </tr>
+                          <tr>
+                            <td class="fw-bold">Khối lượng kiến thức</td>
+                            <td><?= data.chuongTrinhDaoTao[i].chiTiet.tongQuan.khoiLuong ?></td>
+                          </tr>
+                          <tr>
+                            <td class="fw-bold">Đối tượng tuyển sinh</td>
+                            <td><?= data.chuongTrinhDaoTao[i].chiTiet.tongQuan.doiTuong ?></td>
+                          </tr>
+                          <tr>
+                            <td class="fw-bold">Văn bằng tốt nghiệp</td>
+                            <td><?= data.chuongTrinhDaoTao[i].chiTiet.tongQuan.vanBang ?></td>
+                          </tr>
+                          <tr>
+                            <td class="fw-bold">Căn cứ ban hành</td>
+                            <td class="text-muted fst-italic"><?= data.chuongTrinhDaoTao[i].chiTiet.tongQuan.canCu ?></td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <!-- Mục tiêu đào tạo -->
+                  <div class="mb-4 bg-white p-3 rounded shadow-sm">
+                    <h6 class="text-primary fw-bold border-bottom pb-2 mb-3"><i class="fas fa-bullseye me-2"></i> I. MỤC TIÊU ĐÀO TẠO</h6>
+
+                    <h6 class="fw-bold text-dark mt-3">1. Về Kiến thức</h6>
+                    <ul class="modal-list">
+                      <? for (var k = 0; k < data.chuongTrinhDaoTao[i].chiTiet.mucTieu.kienThuc.length; k++) { ?>
+                        <li><i class="fas fa-check text-success"></i> <?= data.chuongTrinhDaoTao[i].chiTiet.mucTieu.kienThuc[k] ?></li>
+                      <? } ?>
+                    </ul>
+
+                    <h6 class="fw-bold text-dark mt-3">2. Về Kỹ năng</h6>
+                    <ul class="modal-list">
+                      <? for (var kn = 0; kn < data.chuongTrinhDaoTao[i].chiTiet.mucTieu.kyNang.length; kn++) { ?>
+                        <li><i class="fas fa-check text-success"></i> <?= data.chuongTrinhDaoTao[i].chiTiet.mucTieu.kyNang[kn] ?></li>
+                      <? } ?>
+                    </ul>
+
+                    <h6 class="fw-bold text-dark mt-3">3. Về Năng lực tự chủ và trách nhiệm</h6>
+                    <ul class="modal-list">
+                      <? for (var nl = 0; nl < data.chuongTrinhDaoTao[i].chiTiet.mucTieu.nangLuc.length; nl++) { ?>
+                        <li><i class="fas fa-check text-success"></i> <?= data.chuongTrinhDaoTao[i].chiTiet.mucTieu.nangLuc[nl] ?></li>
+                      <? } ?>
+                    </ul>
+
+                    <h6 class="fw-bold text-dark mt-3">4. Cơ hội việc làm</h6>
+                    <ul class="modal-list mb-0">
+                      <? for (var vl = 0; vl < data.chuongTrinhDaoTao[i].chiTiet.mucTieu.viecLam.length; vl++) { ?>
+                        <li><i class="fas fa-check text-success"></i> <?= data.chuongTrinhDaoTao[i].chiTiet.mucTieu.viecLam[vl] ?></li>
+                      <? } ?>
+                    </ul>
+                  </div>
+
+                  <!-- Phân bổ thời gian -->
+                  <div class="bg-white p-3 rounded shadow-sm">
+                    <h6 class="text-primary fw-bold border-bottom pb-2 mb-3"><i class="fas fa-clock me-2"></i> II. PHÂN BỔ THỜI GIAN KHÓA HỌC</h6>
+                    <p class="text-muted small">Tổng thời gian toàn khóa là 320 giờ, trong đó thời gian thực học chiếm tỷ trọng lớn nhằm bám sát tiêu chí "học đi đôi với hành".</p>
+                    <div class="table-responsive">
+                      <table class="table table-bordered text-center align-middle mb-0 table-hover">
+                        <thead class="table-light">
+                          <tr>
+                            <th>Hạng mục nội dung</th>
+                            <th>Thời lượng (Giờ)</th>
+                            <th>Tỷ lệ (%)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <? for (var t = 0; t < data.chuongTrinhDaoTao[i].chiTiet.thoiGian.length; t++) { ?>
+                            <tr class="<?= data.chuongTrinhDaoTao[i].chiTiet.thoiGian[t].hangMuc === 'Thực hành' ? 'table-success' : '' ?>">
+                              <td class="text-start fw-bold"><?= data.chuongTrinhDaoTao[i].chiTiet.thoiGian[t].hangMuc ?></td>
+                              <td><?= data.chuongTrinhDaoTao[i].chiTiet.thoiGian[t].thoiLuong ?></td>
+                              <td><span class="badge bg-secondary"><?= data.chuongTrinhDaoTao[i].chiTiet.thoiGian[t].tyLe ?></span></td>
+                            </tr>
+                          <? } ?>
+                          <tr class="table-primary fw-bold">
+                            <td class="text-start">Tổng thời gian thực học tối thiểu</td>
+                            <td>320</td>
+                            <td>100%</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                    <p class="text-danger small mt-2 fst-italic mb-0">* (Ghi chú: Ngoài quỹ thời gian trên, chương trình bố trí riêng 01 tuần dành cho công tác khai giảng, bế giảng và các hoạt động dự phòng).</p>
+                  </div>
+
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Đóng</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        <? } ?>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 3: Cơ sở vật chất & Công nghệ giáo dục -->
+  <section id="co-so-vat-chat" class="py-5 bg-light-section">
+    <div class="container py-4">
+    <div class="text-center mb-5" data-aos="fade-up">
+      <h2 class="section-title">Cơ sở vật chất & Công nghệ</h2>
+    </div>
+
+    <div class="row g-4 mb-5">
+      <!-- Grid Gallery Ảnh -->
+      <div class="col-md-4" data-aos="fade-up" data-aos-delay="100">
+        <img src="https://images.unsplash.com/photo-1577415124269-fc1140a69e91?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Phòng học số hóa" class="img-fluid facility-img w-100 shadow-sm">
+        <h5 class="mt-3 text-center">Phòng học lý thuyết số hóa</h5>
+      </div>
+      <div class="col-md-4" data-aos="fade-up" data-aos-delay="200">
+        <img src="https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Xưởng thực hành" class="img-fluid facility-img w-100 shadow-sm">
+        <h5 class="mt-3 text-center">Xưởng thực hành Xây dựng & Điện</h5>
+      </div>
+      <div class="col-md-4" data-aos="fade-up" data-aos-delay="300">
+        <img src="https://images.unsplash.com/photo-1625246333195-78d9c38ad449?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Trạm thực nghiệm" class="img-fluid facility-img w-100 shadow-sm">
+        <h5 class="mt-3 text-center">Trạm thực nghiệm Nông nghiệp</h5>
+      </div>
+    </div>
+
+    <!-- Khối 3D/WebAR -->
+    <div class="row mt-5 align-items-center bg-light rounded shadow-sm p-4" data-aos="fade-up">
+      <div class="col-lg-6 mb-4 mb-lg-0">
+        <div class="tech-highlight-box h-100 m-0 text-start">
+          <h3 class="fw-bold mb-3"><i class="fas fa-cubes me-2"></i> Ứng dụng Bài giảng trực quan</h3>
+          <p class="fs-5">Tích hợp công nghệ <strong>3D/WebAR</strong> vào thực hành.</p>
+          <p class="text-light opacity-75">Học viên được tương tác trực tiếp với các mô hình máy móc, chi tiết cấu trúc (động cơ điện, chi tiết xây dựng, cấu trúc sinh học cây trồng...) trên không gian 3 chiều trước khi thao tác trên thiết bị thực tế, giúp tăng độ an toàn và hiệu quả tiếp thu lên 300%.</p>
+          <p class="fst-italic mt-4"><i class="fas fa-mouse-pointer"></i> (Hãy thử xoay và phóng to mô hình bên cạnh)</p>
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <!-- Google model-viewer web component để render 3D model -->
+        <model-viewer
+          src="https://modelviewer.dev/shared-assets/models/Astronaut.glb"
+          alt="Mô hình 3D minh họa"
+          auto-rotate
+          camera-controls
+          shadow-intensity="1">
+        </model-viewer>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 4: Đội ngũ nhân sự & Quan hệ hợp tác -->
+  <section id="nhan-su" class="py-5 bg-white">
+    <div class="container py-4">
+
+      <!-- Đội ngũ nhân sự (Number Counter) -->
+      <div class="row mb-5 justify-content-center" data-aos="fade-up">
+        <? for (var j = 0; j < data.doiNguNhanSu.length; j++) { ?>
+          <div class="col-md-4 col-sm-6">
+            <div class="counter-box bg-white rounded shadow-sm m-2">
+              <i class="fas <?= data.doiNguNhanSu[j].icon ?>"></i>
+              <div class="counter-number">
+                <?= data.doiNguNhanSu[j].conSo ?><?= data.doiNguNhanSu[j].donVi ? data.doiNguNhanSu[j].donVi : '' ?>
+              </div>
+              <h5 class="text-muted mt-2"><?= data.doiNguNhanSu[j].tieuDe ?></h5>
+            </div>
+          </div>
+        <? } ?>
+      </div>
+
+      <hr class="my-5 text-muted">
+
+      <!-- Đối tác & Cam kết việc làm -->
+      <div class="text-center" data-aos="fade-up">
+        <h3 class="fw-bold text-primary mb-4"><i class="fas fa-handshake me-2"></i> Quan hệ hợp tác doanh nghiệp</h3>
+        <p class="lead fw-bold text-success mb-4 text-uppercase border border-success d-inline-block px-4 py-2 rounded">
+          Cam kết việc làm 100% sau tốt nghiệp
+        </p>
+
+        <div class="partner-slider mt-4">
+          <? for (var k = 0; k < data.doiTac.length; k++) { ?>
+            <img src="<?= data.doiTac[k].logo ?>" alt="<?= data.doiTac[k].ten ?>" class="partner-logo rounded" title="<?= data.doiTac[k].ten ?>">
+          <? } ?>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="pt-5 pb-3">
+    <div class="container">
+      <div class="row g-4">
+        <div class="col-lg-6 col-md-12">
+          <h5 class="text-uppercase mb-4">TT GDNN-GDTX khu vực Đăk Hà</h5>
+          <p class="text-muted">Đơn vị sự nghiệp công lập, chuyên đào tạo và cung ứng nguồn nhân lực chất lượng cao, đáp ứng nhu cầu phát triển kinh tế - xã hội tại địa phương và khu vực.</p>
+          <ul class="list-unstyled footer-contact mt-4">
+            <li class="mb-3"><i class="fas fa-map-marker-alt"></i> <strong>Địa chỉ:</strong> Cơ sở chính (Đăk Hà), Cơ sở 2 (Đăk Tô), Cơ sở 3 (Tu Mơ Rông)</li>
+            <li class="mb-3"><i class="fas fa-phone-alt"></i> <strong>Điện thoại:</strong> (0260) 3.822.xxx</li>
+            <li class="mb-3"><i class="fas fa-envelope"></i> <strong>Email:</strong> ttgdnngdtx.dakha@gmail.com</li>
+            <li class="mb-3"><i class="fas fa-globe"></i> <strong>Website:</strong> www.gdnngdtx-dakha.edu.vn (Demo)</li>
+          </ul>
+        </div>
+
+        <div class="col-lg-6 col-md-12">
+          <h5 class="text-uppercase mb-4">Bản đồ vị trí</h5>
+          <!-- Google Maps Iframe (Tọa độ trung tâm Đăk Tô làm mẫu) -->
+          <div class="ratio ratio-16x9 rounded overflow-hidden shadow-sm">
+            <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3876.517377519965!2d107.8221876!3d14.6300431!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x316972007af1d0bf%3A0xa1936c6becc3cf0c!2zVGjhu4sgdHLhuqVuIMSQxINrIFTDtCwgxJDgYmsgVMO0LCBLb24gVHVt!5e0!3m2!1svi!2s!4v1700000000000!5m2!1svi!2s" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+          </div>
+        </div>
+      </div>
+      <div class="text-center mt-5 pt-3 border-top border-secondary">
+        <p class="mb-0 text-muted">&copy; 2024 Trung tâm GDNN - GDTX khu vực Đăk Hà. Developed on Google Apps Script.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Bootstrap 5 JS Bundle with Popper -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- AOS JS -->
+  <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+  <!-- Three.js cho hiệu ứng WebGL/3D nền -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+  <!-- Google Model Viewer (Web Component cho 3D/AR) -->
+  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
+
+  <!-- Chèn JS tùy chỉnh từ file JS.html -->
+  <?!= include('JS'); ?>
+</body>
+</html>
