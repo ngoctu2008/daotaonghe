@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản trị - Hệ thống Quản lý Đào tạo Nghề</title>
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- QR Code Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #004085;
+            --secondary-color: #0d6efd;
+            --sidebar-width: 250px;
+        }
+        body {
+            background-color: #f4f6f9;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* Glassmorphism Login */
+        .login-wrapper {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        }
+        .login-card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 2rem;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        }
+
+        /* Layout */
+        #app-wrapper {
+            display: none; /* Hidden until login */
+            width: 100%;
+        }
+        .sidebar {
+            width: var(--sidebar-width);
+            position: fixed;
+            top: 0; left: 0; height: 100vh;
+            background: #343a40;
+            color: #fff;
+            z-index: 1000;
+            transition: all 0.3s;
+        }
+        .sidebar .brand {
+            padding: 1rem;
+            text-align: center;
+            background: rgba(0,0,0,0.2);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .sidebar .nav-link {
+            color: rgba(255,255,255,0.8);
+            padding: 1rem 1.5rem;
+            border-radius: 0;
+            transition: all 0.2s;
+        }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active {
+            background: var(--primary-color);
+            color: white;
+            border-left: 4px solid var(--secondary-color);
+        }
+
+        .main-content {
+            margin-left: var(--sidebar-width);
+            padding: 2rem;
+            min-height: 100vh;
+        }
+        .top-navbar {
+            background: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 2rem;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            margin-bottom: 1.5rem;
+        }
+
+        .table-responsive {
+            background: white;
+            border-radius: 10px;
+            padding: 1rem;
+        }
+
+        /* Views */
+        .view-section { display: none; }
+        .view-section.active { display: block; }
+
+        #qrcode { margin: 20px auto; text-align: center; }
+
+        /* Utils */
+        .text-truncate-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* Badge status */
+        .badge-tuyensinh { background-color: #17a2b8; }
+        .badge-daotao { background-color: #ffc107; color: #000; }
+        .badge-ketthuc { background-color: #28a745; }
+    </style>
+</head>
+<body>
+    <!-- LOGIN SCREEN -->
+    <div id="login-screen" class="login-wrapper">
+        <div class="login-card">
+            <div class="text-center mb-4">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a1/Logo_BGD%C4%90T.svg/200px-Logo_BGD%C4%90T.svg.png" width="80" alt="Logo">
+                <h4 class="mt-3 fw-bold text-dark">Đăng Nhập Quản Trị</h4>
+            </div>
+            <form id="frmLogin">
+                <div class="mb-3">
+                    <label class="form-label">Tài khoản</label>
+                    <input type="text" id="loginUsername" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Mật khẩu</label>
+                    <input type="password" id="loginPassword" class="form-control" required>
+                </div>
+                <button type="submit" class="btn btn-primary w-100">Đăng Nhập</button>
+                <div id="loginAlert" class="alert alert-danger mt-3 d-none"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MAIN APP SCREEN -->
+    <div id="app-wrapper">
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <div class="brand">
+                <h5 class="mb-0 text-white">Quản Lý Đào Tạo</h5>
+            </div>
+            <ul class="nav flex-column mt-3">
+                <li class="nav-item">
+                    <a class="nav-link active" href="#" data-target="view-dashboard"><i class="fas fa-chart-pie me-2"></i>Tổng quan</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" data-target="view-khoahoc"><i class="fas fa-layer-group me-2"></i>Khóa học & Tuyển sinh</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" data-target="view-hocvien"><i class="fas fa-users me-2"></i>Hồ sơ Học viên</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" data-target="view-diem"><i class="fas fa-graduation-cap me-2"></i>Chấm điểm & Tốt nghiệp</a>
+                </li>
+                <!-- Admin only -->
+                <li class="nav-item admin-only d-none">
+                    <a class="nav-link" href="#" data-target="view-danhmuc"><i class="fas fa-cogs me-2"></i>Danh mục Hệ thống</a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="top-navbar">
+                <div>
+                    <h5 class="mb-0 fw-bold text-primary" id="page-title">Tổng quan hệ thống</h5>
+                </div>
+                <div class="d-flex align-items-center">
+                    <div class="dropdown me-3">
+                        <button class="btn btn-light position-relative" type="button" id="btnThongBao" data-bs-toggle="dropdown">
+                            <i class="fas fa-bell"></i>
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="tbCount">0</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end p-2" style="width: 300px; max-height: 400px; overflow-y: auto;" id="listThongBao">
+                            <li><span class="dropdown-item text-muted">Không có thông báo mới</span></li>
+                        </ul>
+                    </div>
+
+                    <div class="dropdown">
+                        <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user-circle me-1"></i> <span id="currentUser">User</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="#" id="btnLogout"><i class="fas fa-sign-out-alt me-2"></i>Đăng xuất</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: DASHBOARD -->
+            <div id="view-dashboard" class="view-section active">
+                <div class="row">
+                    <div class="col-md-3 mb-4">
+                        <div class="card bg-primary text-white h-100">
+                            <div class="card-body">
+                                <h6>Tổng số Lớp học</h6>
+                                <h2 id="stat-lop">0</h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-4">
+                        <div class="card bg-success text-white h-100">
+                            <div class="card-body">
+                                <h6>Học viên Đang học</h6>
+                                <h2 id="stat-hvdanghoc">0</h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-4">
+                        <div class="card bg-warning text-dark h-100">
+                            <div class="card-body">
+                                <h6>Hồ sơ Chờ duyệt</h6>
+                                <h2 id="stat-choduyet">0</h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-4">
+                        <div class="card bg-info text-white h-100">
+                            <div class="card-body">
+                                <h6>Học viên Tốt nghiệp</h6>
+                                <h2 id="stat-totnghiep">0</h2>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: KHÓA HỌC -->
+            <div id="view-khoahoc" class="view-section">
+                <div class="card">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0 fw-bold">Danh sách Khóa học</h6>
+                        <button class="btn btn-primary btn-sm admin-only d-none" onclick="appKhoaHoc.showModal()"><i class="fas fa-plus"></i> Thêm Khóa Mới</button>
+                    </div>
+                    <div class="card-body table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Mã Lớp</th>
+                                    <th>Tên Lớp / Nghề</th>
+                                    <th>GVCN</th>
+                                    <th>Trạng thái</th>
+                                    <th>Sĩ số</th>
+                                    <th>Chờ duyệt</th>
+                                    <th>Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tblKhoaHoc">
+                                <tr><td colspan="7" class="text-center">Đang tải...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: HỌC VIÊN -->
+            <div id="view-hocvien" class="view-section">
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <div class="row align-items-end">
+                            <div class="col-md-4">
+                                <label class="form-label">Chọn Khóa Học</label>
+                                <select class="form-select" id="filterKhoaHoc_HV">
+                                    <option value="">-- Tất cả --</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Trạng thái duyệt</label>
+                                <select class="form-select" id="filterDuyet_HV">
+                                    <option value="">-- Tất cả --</option>
+                                    <option value="Chờ duyệt">Chờ duyệt</option>
+                                    <option value="Đã duyệt">Đã duyệt (Chính thức)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 text-end admin-only d-none">
+                                <button class="btn btn-success" onclick="appHocVien.showModal()"><i class="fas fa-user-plus"></i> Thêm Học Viên</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Mã HV</th>
+                                    <th>Họ Tên</th>
+                                    <th>Lớp</th>
+                                    <th>Ngày sinh</th>
+                                    <th>Đối tượng</th>
+                                    <th>Trạng thái</th>
+                                    <th>Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tblHocVien">
+                                <tr><td colspan="7" class="text-center">Đang tải...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: CHẤM ĐIỂM -->
+            <div id="view-diem" class="view-section">
+                 <div class="card mb-3">
+                    <div class="card-body row">
+                        <div class="col-md-6">
+                            <label class="form-label">Chọn Khóa Học cần nhập điểm</label>
+                            <select class="form-select" id="filterKhoaHoc_Diem">
+                                <option value="">-- Chọn --</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body table-responsive" id="diemContainer">
+                        <p class="text-center text-muted">Vui lòng chọn khóa học để hiển thị bảng điểm</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: DANH MỤC HỆ THỐNG -->
+            <div id="view-danhmuc" class="view-section admin-only d-none">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-white">
+                                <h6 class="mb-0 fw-bold">Danh mục Nghề đào tạo</h6>
+                            </div>
+                            <div class="card-body table-responsive">
+                                <table class="table table-sm table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Tên Nghề</th>
+                                            <th>Số MĐ</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tblNgheDaoTao">
+                                        <tr><td colspan="3">Đang tải...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-white">
+                                <h6 class="mb-0 fw-bold">Đối tượng Chính sách</h6>
+                            </div>
+                            <div class="card-body table-responsive">
+                                <table class="table table-sm table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Tên Đối tượng</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tblDoiTuong">
+                                        <tr><td colspan="2">Đang tải...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- MODAL: QR CODE -->
+    <div class="modal fade" id="modalQR" tabindex="-1">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Mã QR Tuyển Sinh</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <p class="mb-2 fw-bold text-primary" id="qrLop"></p>
+                    <div id="qrcode"></div>
+                    <p class="small text-muted mt-2">Người học quét mã này để mở form đăng ký trực tuyến.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: HỌC VIÊN -->
+    <div class="modal fade" id="modalHocVien" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <form id="frmSaveHocVien">
+                    <div class="modal-header bg-success text-white">
+                        <h5 class="modal-title">Thông tin Học viên</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body row g-3">
+                        <input type="hidden" id="hv_mode" value="add">
+                        <div class="col-md-4">
+                            <label class="form-label">Mã HV</label>
+                            <input type="text" class="form-control" id="hv_MaHV" readonly placeholder="Tự động tạo">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Khóa Học *</label>
+                            <select class="form-select" id="hv_MaKhoa" required></select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Trạng Thái *</label>
+                            <select class="form-select" id="hv_TrangThaiDuyet" required>
+                                <option value="Chờ duyệt">Chờ duyệt</option>
+                                <option value="Đã duyệt">Đã duyệt</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-8">
+                            <label class="form-label">Họ và Tên *</label>
+                            <input type="text" class="form-control" id="hv_HoTen" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Giới tính</label>
+                            <select class="form-select" id="hv_GioiTinh">
+                                <option value="Nam">Nam</option>
+                                <option value="Nữ">Nữ</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">Số ĐT</label>
+                            <input type="text" class="form-control" id="hv_Dienthoai">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Ngày sinh</label>
+                            <input type="date" class="form-control" id="hv_NgaySinh">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">CCCD</label>
+                            <input type="text" class="form-control" id="hv_SoCC">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Đối tượng chính sách</label>
+                            <select class="form-select" id="hv_MaDoiTuong">
+                                <option value="">Không</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Việc làm sau đào tạo</label>
+                            <select class="form-select" id="hv_ViecLam">
+                                <option value="">-- Chưa cập nhật --</option>
+                                <option value="Tự tạo việc làm">Tự tạo việc làm</option>
+                                <option value="Được doanh nghiệp, đơn vị bao tiêu sản phẩm">Được bao tiêu sản phẩm</option>
+                                <option value="Được ký hợp đồng lao động">Được ký HĐLĐ</option>
+                                <option value="Đi làm việc có thời hạn ở nước ngoài">Xuất khẩu lao động</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                        <button type="submit" class="btn btn-success">Lưu Học Viên</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: KHOA HỌC -->
+    <div class="modal fade" id="modalKhoaHoc" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <form id="frmSaveKhoaHoc">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title">Thông tin Khóa học</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body row g-3">
+                        <input type="hidden" id="kh_mode" value="add">
+                        <div class="col-md-6">
+                            <label class="form-label">Mã Lớp (VD: K2026-001) *</label>
+                            <input type="text" class="form-control" id="kh_MaKhoa" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Tên Lớp *</label>
+                            <input type="text" class="form-control" id="kh_TenKhoa" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Nghề Đào tạo *</label>
+                            <select class="form-select" id="kh_MaNghe" required></select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Giáo viên chủ nhiệm</label>
+                            <select class="form-select" id="kh_GVCN"></select>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label">Địa điểm mở lớp</label>
+                            <input type="text" class="form-control" id="kh_DiaDiem">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Trạng thái</label>
+                            <select class="form-select" id="kh_TrangThai">
+                                <option value="Tuyển sinh">Tuyển sinh</option>
+                                <option value="Đang đào tạo">Đang đào tạo</option>
+                                <option value="Kết thúc khóa học">Kết thúc khóa học</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Từ ngày</label>
+                            <input type="date" class="form-control" id="kh_TuNgay">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Đến ngày</label>
+                            <input type="date" class="form-control" id="kh_DenNgay">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                        <button type="submit" class="btn btn-primary">Lưu thông tin</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="module" src="app.js"></script>
+</body>
+</html>
