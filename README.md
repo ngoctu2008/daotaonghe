@@ -10,7 +10,7 @@ Dự án hỗ trợ **triển khai tự động 1-click** lên Vercel.
 
 1. Truy cập [Supabase.com](https://supabase.com/) và tạo một Project mới.
 2. Tại trang quản trị Supabase, vào mục **SQL Editor**, tạo một Query mới.
-3. Copy toàn bộ nội dung trong file `schema.sql` của dự án này và dán vào SQL Editor, sau đó nhấn **Run** để tự động tạo bảng, hàm RPC (bảo mật mật khẩu) và dữ liệu mẫu.
+3. Copy toàn bộ nội dung trong file `supabase/migrations/20240101000000_init_schema.sql` của dự án này và dán vào SQL Editor, sau đó nhấn **Run** để tự động tạo bảng, hàm RPC và dữ liệu cấu hình.
 4. Vào phần **Project Settings -> API**. Lưu lại 2 thông tin sau:
    - **Project URL**
    - **Project API Keys (anon / public)**
@@ -18,16 +18,12 @@ Dự án hỗ trợ **triển khai tự động 1-click** lên Vercel.
 ### Bước 2: Deploy lên Vercel
 
 1. Tạo tài khoản miễn phí tại [Vercel.com](https://vercel.com) (nếu chưa có).
-2. Nhấn vào nút Deploy bên dưới để tự động clone repository này và cài đặt lên Vercel:
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fjules-ai%2Ftraining-management-app&env=NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY)
-
-*(Lưu ý: Nếu bạn đang tự push code này lên repo GitHub cá nhân của bạn, hãy trỏ link trong nút Deploy về repo của bạn).*
-
-3. Tại màn hình cài đặt của Vercel, hãy điền 2 biến môi trường đã lưu ở Bước 1 vào mục **Environment Variables**:
+2. Tự động sao chép (Fork) repository này về tài khoản GitHub của bạn.
+3. Liên kết repository vừa fork với Vercel và triển khai. *(Quá trình build sẽ báo lỗi nếu bạn chưa khai báo biến môi trường, hãy thực hiện bước 4)*.
+4. Tại màn hình cài đặt của Vercel (Project Settings > Environment Variables), hãy điền 2 biến môi trường đã lưu ở Bước 1:
    - `NEXT_PUBLIC_SUPABASE_URL` = (Điền Project URL của Supabase)
    - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY` = (Điền Project API Keys `anon` của Supabase)
-4. Nhấn **Deploy** và chờ 2 -> 3 phút để hệ thống tự động thiết lập.
+5. Nhấn **Redeploy** và chờ 2 -> 3 phút để hệ thống tự động thiết lập.
 
 ---
 
@@ -38,4 +34,4 @@ Sau khi Deploy thành công, hãy truy cập vào đường link Vercel cung c�
 - **Tên đăng nhập:** `admin`
 - **Mật khẩu:** `admin123`
 
-*(Sau khi đăng nhập, hệ thống sẽ cấp quyền quản trị cao nhất "Ban Giám đốc").*
+⚠️ **CẢNH BÁO BẢO MẬT:** Ngay sau khi đăng nhập lần đầu tiên, hệ thống sẽ yêu cầu bạn đổi mật khẩu. Hãy đổi ngay lập tức để bảo vệ dữ liệu học viên (CCCD, SĐT...). Không được chia sẻ mật khẩu admin cho người khác.

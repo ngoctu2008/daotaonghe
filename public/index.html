@@ -165,6 +165,9 @@
                     <a class="nav-link" href="#" data-target="view-diem"><i class="fas fa-graduation-cap me-2"></i>Chấm điểm & Tốt nghiệp</a>
                 </li>
                 <!-- Admin only -->
+                <li class="nav-item bgd-only d-none">
+                    <a class="nav-link" href="#" data-target="view-users"><i class="fas fa-user-shield me-2"></i>Quản lý Người dùng</a>
+                </li>
                 <li class="nav-item admin-only d-none">
                     <a class="nav-link" href="#" data-target="view-danhmuc"><i class="fas fa-cogs me-2"></i>Danh mục Hệ thống</a>
                 </li>
@@ -193,7 +196,9 @@
                             <i class="fas fa-user-circle me-1"></i> <span id="currentUser">User</span>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="#" id="btnLogout"><i class="fas fa-sign-out-alt me-2"></i>Đăng xuất</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="appDoiMatKhau.showModal()"><i class="fas fa-key me-2"></i>Đổi mật khẩu</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="#" id="btnLogout"><i class="fas fa-sign-out-alt me-2"></i>Đăng xuất</a></li>
                         </ul>
                     </div>
                 </div>
@@ -327,6 +332,33 @@
                 <div class="card">
                     <div class="card-body table-responsive" id="diemContainer">
                         <p class="text-center text-muted">Vui lòng chọn khóa học để hiển thị bảng điểm</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: USERS -->
+            <div id="view-users" class="view-section bgd-only d-none">
+                <div class="card">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0 fw-bold">Quản lý Tài Khoản Hệ Thống</h6>
+                        <button class="btn btn-primary btn-sm" onclick="appUsers.showModal()"><i class="fas fa-plus"></i> Tạo Tài Khoản</button>
+                    </div>
+                    <div class="card-body table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Username</th>
+                                    <th>Họ Tên</th>
+                                    <th>Vai trò</th>
+                                    <th>Trạng thái</th>
+                                    <th>Lỗi Brute-force</th>
+                                    <th>Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tblUsers">
+                                <tr><td colspan="6" class="text-center">Đang tải...</td></tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -476,7 +508,82 @@
         </div>
     </div>
 
-    <!-- MODAL: KHOA HỌC -->
+
+    <!-- MODAL: TẠO TÀI KHOẢN -->
+    <div class="modal fade" id="modalAddUser" tabindex="-1">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <form id="frmAddUser">
+                    <div class="modal-header bg-dark text-white">
+                        <h5 class="modal-title">Tạo Tài Khoản</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Tên đăng nhập (Username) *</label>
+                            <input type="text" class="form-control" id="u_username" required pattern="[a-zA-Z0-9_]+">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Họ và tên *</label>
+                            <input type="text" class="form-control" id="u_hoten" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Vai trò *</label>
+                            <select class="form-select" id="u_role" required>
+                                <option value="Giáo viên">Giáo viên</option>
+                                <option value="Giáo vụ">Giáo vụ</option>
+                                <option value="Ban Giám đốc">Ban Giám đốc</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Mật khẩu tạm thời *</label>
+                            <input type="text" class="form-control" id="u_pass" required minlength="6">
+                            <small class="text-muted">Người dùng sẽ phải đổi mật khẩu ở lần đăng nhập đầu.</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-dark w-100">TẠO TÀI KHOẢN</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: ĐỔI MẬT KHẨU -->
+    <div class="modal fade" id="modalDoiMatKhau" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <form id="frmDoiMatKhau">
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title">Đổi Mật Khẩu</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="dmk-alert" class="alert alert-warning" style="display:none; font-size:0.85rem">
+                            Vì lý do bảo mật, bạn bắt buộc phải đổi mật khẩu ở lần đăng nhập đầu tiên!
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Mật khẩu cũ *</label>
+                            <input type="password" class="form-control" id="dmk_old" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Mật khẩu mới *</label>
+                            <input type="password" class="form-control" id="dmk_new" required minlength="6">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Xác nhận mật khẩu mới *</label>
+                            <input type="password" class="form-control" id="dmk_confirm" required minlength="6">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-danger w-100">CẬP NHẬT MẬT KHẨU</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+
     <div class="modal fade" id="modalKhoaHoc" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">

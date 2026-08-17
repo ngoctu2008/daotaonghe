@@ -7,12 +7,15 @@ CREATE TABLE Users (
     Role VARCHAR(50) NOT NULL,
     TrangThai VARCHAR(50) DEFAULT 'Hoạt động',
     MatKhauHash TEXT NOT NULL,
-    Salt TEXT NOT NULL
+    Salt TEXT NOT NULL,
+    PhaiDoiMatKhau BOOLEAN DEFAULT TRUE,
+    LanDangNhapSai INT DEFAULT 0,
+    ThoiGianKhoa TIMESTAMP
 );
 
 -- Bảng Session để Custom Auth
 CREATE TABLE UserSessions (
-    Token TEXT PRIMARY KEY,
+    TokenHash TEXT PRIMARY KEY,
     Username VARCHAR(50) REFERENCES Users(Username) ON DELETE CASCADE,
     ExpiresAt TIMESTAMP NOT NULL
 );
@@ -50,13 +53,13 @@ CREATE TABLE Khoahoc (
 -- 5. Bảng Hocvien
 CREATE TABLE Hocvien (
     MaHV VARCHAR(50) PRIMARY KEY,
-    MaKhoa VARCHAR(50) REFERENCES Khoahoc(MaKhoa) ON DELETE CASCADE,
+    MaKhoa VARCHAR(50) REFERENCES Khoahoc(MaKhoa) ON DELETE RESTRICT,
     HoTen VARCHAR(100) NOT NULL,
     GioiTinh VARCHAR(10),
     NgaySinh DATE,
     TrangThaiDuyet VARCHAR(50) DEFAULT 'Chờ duyệt',
     GhiChu TEXT,
-    SoCC VARCHAR(20),
+    SoCC VARCHAR(20) UNIQUE,
     NgayCC DATE,
     NoiCC TEXT,
     TrinhDoVH VARCHAR(50),
@@ -68,11 +71,11 @@ CREATE TABLE Hocvien (
     Dienthoai VARCHAR(20),
     MaDoiTuong INT REFERENCES DoiTuong(MaDoiTuong) ON DELETE SET NULL,
     ViecLamSauDaoTao VARCHAR(100),
-    DiemMD1 NUMERIC(4,1),
-    DiemMD2 NUMERIC(4,1),
-    DiemMD3 NUMERIC(4,1),
-    DiemMD4 NUMERIC(4,1),
-    DiemMD5 NUMERIC(4,1),
+    DiemMD1 NUMERIC(4,1) CHECK (DiemMD1 >= 0 AND DiemMD1 <= 10),
+    DiemMD2 NUMERIC(4,1) CHECK (DiemMD2 >= 0 AND DiemMD2 <= 10),
+    DiemMD3 NUMERIC(4,1) CHECK (DiemMD3 >= 0 AND DiemMD3 <= 10),
+    DiemMD4 NUMERIC(4,1) CHECK (DiemMD4 >= 0 AND DiemMD4 <= 10),
+    DiemMD5 NUMERIC(4,1) CHECK (DiemMD5 >= 0 AND DiemMD5 <= 10),
     TongKet NUMERIC(4,1),
     XepLoai VARCHAR(50)
 );
@@ -119,24 +122,60 @@ RETURNS VARCHAR AS $$
 DECLARE
     v_user VARCHAR;
 BEGIN
-    SELECT Username INTO v_user FROM UserSessions WHERE Token = p_token AND ExpiresAt > CURRENT_TIMESTAMP;
+    SELECT Username INTO v_user FROM UserSessions WHERE TokenHash = encode(digest(p_token, 'sha256'), 'hex') AND ExpiresAt > CURRENT_TIMESTAMP;
     RETURN v_user;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 
--- Hàm tạo user
-CREATE OR REPLACE FUNCTION create_user(p_username VARCHAR, p_hoten VARCHAR, p_role VARCHAR, p_password VARCHAR)
+-- Đổi mật khẩu (Người dùng tự đổi)
+CREATE OR REPLACE FUNCTION change_password(p_token TEXT, p_old_pass TEXT, p_new_pass TEXT)
 RETURNS json AS $$
 DECLARE
-    v_salt TEXT;
+    v_user RECORD;
+    v_username VARCHAR;
+BEGIN
+    v_username := verify_token(p_token);
+    IF v_username IS NULL THEN RETURN json_build_object('success', false, 'message', 'Unauthorized'); END IF;
+
+    SELECT * INTO v_user FROM Users WHERE Username = v_username;
+
+    -- Verify old password (bcrypt)
+    IF v_user.MatKhauHash = crypt(p_old_pass, v_user.MatKhauHash) THEN
+        UPDATE Users
+        SET MatKhauHash = crypt(p_new_pass, gen_salt('bf')),
+            PhaiDoiMatKhau = FALSE
+        WHERE Username = v_username;
+
+        -- Revoke all active sessions
+        DELETE FROM UserSessions WHERE Username = v_username;
+
+        RETURN json_build_object('success', true, 'message', 'Đổi mật khẩu thành công');
+    ELSE
+        RETURN json_build_object('success', false, 'message', 'Mật khẩu cũ không chính xác');
+    END IF;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+
+-- Hàm tạo user an toàn (chỉ Admin)
+CREATE OR REPLACE FUNCTION admin_create_user(p_token TEXT, p_username VARCHAR, p_hoten VARCHAR, p_role VARCHAR, p_password VARCHAR)
+RETURNS json AS $$
+DECLARE
+    v_admin VARCHAR;
+    v_admin_role VARCHAR;
     v_hash TEXT;
 BEGIN
-    v_salt := encode(gen_random_bytes(16), 'hex');
-    v_hash := encode(digest(p_password || v_salt, 'sha256'), 'hex');
+    v_admin := verify_token(p_token);
+    IF v_admin IS NULL THEN RETURN json_build_object('success', false, 'message', 'Unauthorized'); END IF;
+    SELECT Role INTO v_admin_role FROM Users WHERE Username = v_admin;
+    IF v_admin_role <> 'Ban Giám đốc' THEN RETURN json_build_object('success', false, 'message', 'Forbidden'); END IF;
 
-    INSERT INTO Users (Username, HoTen, Role, TrangThai, MatKhauHash, Salt)
-    VALUES (p_username, p_hoten, p_role, 'Hoạt động', v_hash, v_salt);
+    -- Bcrypt hashing
+    v_hash := crypt(p_password, gen_salt('bf'));
+
+    INSERT INTO Users (Username, HoTen, Role, TrangThai, MatKhauHash, Salt, PhaiDoiMatKhau)
+    VALUES (p_username, p_hoten, p_role, 'Hoạt động', v_hash, 'deprecated', TRUE);
 
     RETURN json_build_object('success', true, 'message', 'Tạo tài khoản thành công');
 EXCEPTION
@@ -145,37 +184,37 @@ EXCEPTION
     WHEN OTHERS THEN
         RETURN json_build_object('success', false, 'message', SQLERRM);
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
--- Hàm RPC Đăng nhập bảo mật (V2) - Có trả về Session Token
+
+-- Hàm RPC Đăng nhập bảo mật (V2)
 CREATE OR REPLACE FUNCTION login_user_v2(p_username VARCHAR, p_password VARCHAR)
 RETURNS json AS $$
 DECLARE
     v_user RECORD;
-    v_computed_hash TEXT;
     v_new_token TEXT;
+    v_token_hash TEXT;
 BEGIN
     SELECT * INTO v_user FROM Users WHERE Username = p_username;
 
     IF NOT FOUND THEN RETURN json_build_object('success', false, 'message', 'Tài khoản không tồn tại'); END IF;
     IF v_user.TrangThai <> 'Hoạt động' THEN RETURN json_build_object('success', false, 'message', 'Tài khoản đang bị khóa'); END IF;
+    IF v_user.ThoiGianKhoa IS NOT NULL AND v_user.ThoiGianKhoa > CURRENT_TIMESTAMP THEN
+        RETURN json_build_object('success', false, 'message', 'Tài khoản bị khóa tạm do nhập sai quá nhiều. Thử lại sau 15 phút.');
+    END IF;
 
-    v_computed_hash := encode(digest(p_password || v_user.Salt, 'sha256'), 'hex');
-
-    IF v_computed_hash = v_user.MatKhauHash THEN
+    IF v_user.MatKhauHash = crypt(p_password, v_user.MatKhauHash) THEN
+        UPDATE Users SET LanDangNhapSai = 0, ThoiGianKhoa = NULL WHERE Username = p_username;
         v_new_token := encode(gen_random_bytes(32), 'hex');
-        INSERT INTO UserSessions (Token, Username, ExpiresAt) VALUES (v_new_token, v_user.Username, CURRENT_TIMESTAMP + INTERVAL '1 day');
-
-        RETURN json_build_object(
-            'success', true,
-            'token', v_new_token,
-            'user', json_build_object('Username', v_user.Username, 'HoTen', v_user.HoTen, 'Role', v_user.Role)
-        );
+        v_token_hash := encode(digest(v_new_token, 'sha256'), 'hex');
+        INSERT INTO UserSessions (TokenHash, Username, ExpiresAt) VALUES (v_token_hash, v_user.Username, CURRENT_TIMESTAMP + INTERVAL '1 day');
+        RETURN json_build_object('success', true, 'token', v_new_token, 'user', json_build_object('Username', v_user.Username, 'HoTen', v_user.HoTen, 'Role', v_user.Role, 'PhaiDoiMatKhau', v_user.PhaiDoiMatKhau));
     ELSE
+        UPDATE Users SET LanDangNhapSai = COALESCE(LanDangNhapSai, 0) + 1, ThoiGianKhoa = CASE WHEN COALESCE(LanDangNhapSai, 0) + 1 >= 5 THEN CURRENT_TIMESTAMP + INTERVAL '15 minutes' ELSE NULL END WHERE Username = p_username;
         RETURN json_build_object('success', false, 'message', 'Sai mật khẩu');
     END IF;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 
 -- ==== SECURE READ RPCS (PASCALCASE ALIASES FOR JSON OUTPUT) ====
@@ -206,7 +245,7 @@ BEGIN
 
     RETURN json_build_object('success', true, 'data', COALESCE(v_result, '[]'::json));
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 
 -- Admin & GV: Đọc danh sách học viên
@@ -240,7 +279,7 @@ BEGIN
 
     RETURN json_build_object('success', true, 'data', COALESCE(v_result, '[]'::json));
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 
 -- Thống kê Dashboard
@@ -260,7 +299,7 @@ BEGIN
 
     RETURN json_build_object('success', true, 'data', json_build_object('cLop', c_lop, 'cHv', c_hv, 'cCho', c_cho, 'cTn', c_tn));
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- Đọc Thông báo
 CREATE OR REPLACE FUNCTION get_thongbao(p_token TEXT)
@@ -283,7 +322,7 @@ BEGIN
     SELECT json_agg(row_to_json(t)) INTO v_result FROM QueryThongBao t;
     RETURN json_build_object('success', true, 'data', COALESCE(v_result, '[]'::json));
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 
 -- Cache Data cho form
@@ -302,12 +341,11 @@ BEGIN
 
     RETURN json_build_object('success', true, 'data', json_build_object('Nghedaotao', v_nghe, 'DoiTuong', v_dt, 'Users', v_users));
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 
 -- ==== PUBLIC READ/WRITE (Dành cho Form Đăng Ký - Không cần Token) ====
 
--- Lấy danh sách Khóa đang tuyển sinh (Ẩn hết PII GVCN)
 CREATE OR REPLACE FUNCTION public_get_khoatuyensinh()
 RETURNS json AS $$
 DECLARE
@@ -319,9 +357,8 @@ BEGIN
     SELECT COALESCE(json_agg(row_to_json(t)), '[]') INTO v_result FROM QueryPublic t;
     RETURN json_build_object('success', true, 'data', v_result);
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
--- Lấy danh sách Đối tượng
 CREATE OR REPLACE FUNCTION public_get_doituong()
 RETURNS json AS $$
 DECLARE
@@ -333,10 +370,9 @@ BEGIN
     SELECT COALESCE(json_agg(row_to_json(t)), '[]') INTO v_result FROM QueryPublicDt t;
     RETURN json_build_object('success', true, 'data', v_result);
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 
--- Đăng ký học viên (Public)
 CREATE OR REPLACE FUNCTION register_hocvien(p_data jsonb)
 RETURNS json AS $$
 DECLARE
@@ -344,9 +380,27 @@ DECLARE
     v_new_sott INT;
     v_new_mahv VARCHAR;
     v_gvcn VARCHAR;
+    v_trangthai VARCHAR;
+    v_socc VARCHAR;
 BEGIN
     v_makhoa := p_data->>'MaKhoa';
-    LOCK TABLE Hocvien IN EXCLUSIVE MODE;
+    v_socc := p_data->>'SoCC';
+
+    -- Kiểm tra trạng thái khóa học
+    SELECT TrangThai INTO v_trangthai FROM Khoahoc WHERE MaKhoa = v_makhoa;
+    IF v_trangthai IS NULL THEN
+        RETURN json_build_object('success', false, 'message', 'Khóa học không tồn tại');
+    END IF;
+    IF v_trangthai <> 'Tuyển sinh' THEN
+        RETURN json_build_object('success', false, 'message', 'Khóa học đã đóng đăng ký (không còn ở trạng thái Tuyển sinh)');
+    END IF;
+
+    -- Kiểm tra trùng SoCC
+    IF EXISTS (SELECT 1 FROM Hocvien WHERE SoCC = v_socc AND MaKhoa = v_makhoa) THEN
+        RETURN json_build_object('success', false, 'message', 'Số CCCD này đã đăng ký vào khóa học này rồi');
+    END IF;
+
+    PERFORM pg_advisory_xact_lock(hashtext(v_makhoa));
     SELECT COALESCE(MAX(CAST(SUBSTRING(MaHV FROM LENGTH(v_makhoa) + 2) AS INT)), 0) + 1 INTO v_new_sott FROM Hocvien WHERE MaKhoa = v_makhoa;
     v_new_mahv := v_makhoa || '-' || LPAD(v_new_sott::TEXT, 2, '0');
 
@@ -356,7 +410,7 @@ BEGIN
         ViecLamSauDaoTao, TrangThaiDuyet
     ) VALUES (
         v_new_mahv, v_makhoa, p_data->>'HoTen', p_data->>'GioiTinh', CAST(NULLIF(p_data->>'NgaySinh', '') AS DATE),
-        p_data->>'SoCC', CAST(NULLIF(p_data->>'NgayCC', '') AS DATE), p_data->>'NoiCC', p_data->>'DanToc', p_data->>'TonGiao', p_data->>'TrinhDoVH',
+        v_socc, CAST(NULLIF(p_data->>'NgayCC', '') AS DATE), p_data->>'NoiCC', p_data->>'DanToc', p_data->>'TonGiao', p_data->>'TrinhDoVH',
         p_data->>'HKTT', p_data->>'NoiCuTru', p_data->>'Dienthoai', CAST(NULLIF(p_data->>'MaDoiTuong', '') AS INT),
         p_data->>'ViecLamSauDaoTao', 'Chờ duyệt'
     );
@@ -365,8 +419,13 @@ BEGIN
     INSERT INTO ThongBao (NguoiNhan, NoiDung, MaKhoa) VALUES (COALESCE(v_gvcn, 'admin'), 'Học viên mới: ' || (p_data->>'HoTen') || ' vừa đăng ký lớp ' || v_makhoa || '. Vui lòng kiểm tra.', v_makhoa);
 
     RETURN json_build_object('success', true, 'mahv', v_new_mahv);
+EXCEPTION
+    WHEN unique_violation THEN
+        RETURN json_build_object('success', false, 'message', 'Số CCCD này đã được sử dụng trên hệ thống');
+    WHEN OTHERS THEN
+        RETURN json_build_object('success', false, 'message', SQLERRM);
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 
 -- ==== ADMIN SECURE WRITES ====
@@ -393,7 +452,7 @@ BEGIN
     END IF;
     RETURN json_build_object('success', true);
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 
 CREATE OR REPLACE FUNCTION admin_delete_khoahoc(p_token TEXT, p_makhoa TEXT)
@@ -401,16 +460,22 @@ RETURNS json AS $$
 DECLARE
     v_user VARCHAR;
     v_role VARCHAR;
+    v_count INT;
 BEGIN
     v_user := verify_token(p_token);
     IF v_user IS NULL THEN RETURN json_build_object('success', false, 'message', 'Unauthorized'); END IF;
     SELECT Role INTO v_role FROM Users WHERE Username = v_user;
     IF v_role NOT IN ('Ban Giám đốc', 'Giáo vụ') THEN RETURN json_build_object('success', false, 'message', 'Forbidden'); END IF;
 
+    SELECT COUNT(*) INTO v_count FROM Hocvien WHERE MaKhoa = p_makhoa;
+    IF v_count > 0 THEN
+        RETURN json_build_object('success', false, 'message', 'Không thể xóa khóa học vì đã có hồ sơ học viên. Bạn chỉ nên chuyển trạng thái thành "Kết thúc khóa học".');
+    END IF;
+
     DELETE FROM Khoahoc WHERE MaKhoa = p_makhoa;
     RETURN json_build_object('success', true);
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 
 CREATE OR REPLACE FUNCTION admin_save_hocvien(p_token TEXT, p_mode TEXT, p_data jsonb)
@@ -422,6 +487,10 @@ DECLARE
     v_gvcn VARCHAR;
     v_new_sott INT;
     v_new_mahv VARCHAR;
+    -- Server-side grading calculation variables
+    v_d1 NUMERIC; v_d2 NUMERIC; v_d3 NUMERIC; v_d4 NUMERIC; v_d5 NUMERIC;
+    v_somd INT; v_tong NUMERIC; v_count INT; v_liet BOOLEAN;
+    v_tk NUMERIC; v_xl VARCHAR;
 BEGIN
     v_user := verify_token(p_token);
     IF v_user IS NULL THEN RETURN json_build_object('success', false, 'message', 'Unauthorized'); END IF;
@@ -431,10 +500,10 @@ BEGIN
     IF p_mode = 'add' THEN
         v_makhoa := p_data->>'MaKhoa';
 
-        -- RBAC
+        -- RBAC FIX: Handle NULL gracefully with IS DISTINCT FROM
         IF v_role = 'Giáo viên' THEN
             SELECT GVCN_Email INTO v_gvcn FROM Khoahoc WHERE MaKhoa = v_makhoa;
-            IF v_gvcn <> v_user THEN
+            IF v_gvcn IS DISTINCT FROM v_user THEN
                 RETURN json_build_object('success', false, 'message', 'Forbidden: Not your course');
             END IF;
         END IF;
@@ -455,16 +524,22 @@ BEGIN
     ELSIF p_mode = 'edit' THEN
         SELECT MaKhoa INTO v_makhoa FROM Hocvien WHERE MaHV = p_data->>'MaHV';
 
+        -- RBAC FIX: Handle NULL gracefully
         IF v_role = 'Giáo viên' THEN
             SELECT GVCN_Email INTO v_gvcn FROM Khoahoc WHERE MaKhoa = v_makhoa;
-            IF v_gvcn <> v_user THEN
+            IF v_gvcn IS DISTINCT FROM v_user THEN
                 RETURN json_build_object('success', false, 'message', 'Forbidden: Not your course');
             END IF;
         END IF;
 
+        -- Lấy số mô đun để tính toán an toàn phía Server
+        SELECT n.SoMoDun INTO v_somd FROM Nghedaotao n JOIN Khoahoc k ON k.MaNghe = n.MaNghe WHERE k.MaKhoa = v_makhoa;
+
+        -- Cập nhật thông tin lý lịch cơ bản
+        -- SEC-05: Chỉ Ban Giám đốc/Giáo vụ mới được quyền duyệt, Giáo viên giữ nguyên trạng thái cũ
         UPDATE Hocvien SET
             HoTen = COALESCE(p_data->>'HoTen', HoTen),
-            TrangThaiDuyet = COALESCE(p_data->>'TrangThaiDuyet', TrangThaiDuyet),
+            TrangThaiDuyet = CASE WHEN v_role IN ('Ban Giám đốc', 'Giáo vụ') THEN COALESCE(p_data->>'TrangThaiDuyet', TrangThaiDuyet) ELSE TrangThaiDuyet END,
             GioiTinh = COALESCE(p_data->>'GioiTinh', GioiTinh),
             Dienthoai = COALESCE(p_data->>'Dienthoai', Dienthoai),
             SoCC = COALESCE(p_data->>'SoCC', SoCC),
@@ -474,14 +549,38 @@ BEGIN
             DiemMD2 = CASE WHEN p_data ? 'DiemMD2' THEN CAST(p_data->>'DiemMD2' AS NUMERIC) ELSE DiemMD2 END,
             DiemMD3 = CASE WHEN p_data ? 'DiemMD3' THEN CAST(p_data->>'DiemMD3' AS NUMERIC) ELSE DiemMD3 END,
             DiemMD4 = CASE WHEN p_data ? 'DiemMD4' THEN CAST(p_data->>'DiemMD4' AS NUMERIC) ELSE DiemMD4 END,
-            DiemMD5 = CASE WHEN p_data ? 'DiemMD5' THEN CAST(p_data->>'DiemMD5' AS NUMERIC) ELSE DiemMD5 END,
-            TongKet = CASE WHEN p_data ? 'TongKet' THEN CAST(p_data->>'TongKet' AS NUMERIC) ELSE TongKet END,
-            XepLoai = CASE WHEN p_data ? 'XepLoai' THEN p_data->>'XepLoai' ELSE XepLoai END
+            DiemMD5 = CASE WHEN p_data ? 'DiemMD5' THEN CAST(p_data->>'DiemMD5' AS NUMERIC) ELSE DiemMD5 END
         WHERE MaHV = p_data->>'MaHV';
+
+        -- TÍNH TOÁN LẠI ĐIỂM Ở PHÍA SERVER ĐỂ NGĂN CHẶN CLIENT FAKING
+        SELECT DiemMD1, DiemMD2, DiemMD3, DiemMD4, DiemMD5 INTO v_d1, v_d2, v_d3, v_d4, v_d5 FROM Hocvien WHERE MaHV = p_data->>'MaHV';
+        v_tong := 0; v_count := 0; v_liet := FALSE;
+
+        IF v_somd >= 1 AND v_d1 IS NOT NULL THEN v_tong := v_tong + v_d1; v_count := v_count + 1; IF v_d1 < 5.0 THEN v_liet := TRUE; END IF; END IF;
+        IF v_somd >= 2 AND v_d2 IS NOT NULL THEN v_tong := v_tong + v_d2; v_count := v_count + 1; IF v_d2 < 5.0 THEN v_liet := TRUE; END IF; END IF;
+        IF v_somd >= 3 AND v_d3 IS NOT NULL THEN v_tong := v_tong + v_d3; v_count := v_count + 1; IF v_d3 < 5.0 THEN v_liet := TRUE; END IF; END IF;
+        IF v_somd >= 4 AND v_d4 IS NOT NULL THEN v_tong := v_tong + v_d4; v_count := v_count + 1; IF v_d4 < 5.0 THEN v_liet := TRUE; END IF; END IF;
+        IF v_somd >= 5 AND v_d5 IS NOT NULL THEN v_tong := v_tong + v_d5; v_count := v_count + 1; IF v_d5 < 5.0 THEN v_liet := TRUE; END IF; END IF;
+
+        IF v_count = v_somd THEN
+            v_tk := ROUND(v_tong / v_somd, 1);
+            IF v_liet THEN v_xl := 'Không đạt';
+            ELSE
+                IF v_tk >= 9.0 THEN v_xl := 'Xuất sắc';
+                ELSIF v_tk >= 8.0 THEN v_xl := 'Giỏi';
+                ELSIF v_tk >= 7.0 THEN v_xl := 'Khá';
+                ELSIF v_tk >= 5.0 THEN v_xl := 'Trung bình';
+                ELSE v_xl := 'Không đạt'; END IF;
+            END IF;
+            UPDATE Hocvien SET TongKet = v_tk, XepLoai = v_xl WHERE MaHV = p_data->>'MaHV';
+        ELSE
+            UPDATE Hocvien SET TongKet = NULL, XepLoai = NULL WHERE MaHV = p_data->>'MaHV';
+        END IF;
+
     END IF;
     RETURN json_build_object('success', true);
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 
 CREATE OR REPLACE FUNCTION admin_delete_hocvien(p_token TEXT, p_mahv TEXT)
@@ -498,7 +597,7 @@ BEGIN
     DELETE FROM Hocvien WHERE MaHV = p_mahv;
     RETURN json_build_object('success', true);
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 CREATE OR REPLACE FUNCTION mark_read(p_token TEXT, p_matb INT)
 RETURNS json AS $$
@@ -508,10 +607,44 @@ BEGIN
     v_user := verify_token(p_token);
     IF v_user IS NULL THEN RETURN json_build_object('success', false, 'message', 'Unauthorized'); END IF;
 
-    UPDATE ThongBao SET DaDoc = true WHERE MaTB = p_matb;
+    -- Secure check: only allow updating own notifications
+    UPDATE ThongBao SET DaDoc = true WHERE MaTB = p_matb AND NguoiNhan = v_user;
     RETURN json_build_object('success', true);
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+-- Revoke all execute rights from public default for all functions
+REVOKE ALL ON FUNCTION login_user_v2(VARCHAR, VARCHAR) FROM PUBLIC;
+REVOKE ALL ON FUNCTION get_khoahoc(TEXT) FROM PUBLIC;
+REVOKE ALL ON FUNCTION get_hocvien(TEXT, TEXT, TEXT) FROM PUBLIC;
+REVOKE ALL ON FUNCTION get_dashboard_stats(TEXT) FROM PUBLIC;
+REVOKE ALL ON FUNCTION get_thongbao(TEXT) FROM PUBLIC;
+REVOKE ALL ON FUNCTION get_cache_data(TEXT) FROM PUBLIC;
+REVOKE ALL ON FUNCTION admin_save_khoahoc(TEXT, TEXT, jsonb) FROM PUBLIC;
+REVOKE ALL ON FUNCTION admin_delete_khoahoc(TEXT, TEXT) FROM PUBLIC;
+REVOKE ALL ON FUNCTION admin_save_hocvien(TEXT, TEXT, jsonb) FROM PUBLIC;
+REVOKE ALL ON FUNCTION admin_delete_hocvien(TEXT, TEXT) FROM PUBLIC;
+REVOKE ALL ON FUNCTION mark_read(TEXT, INT) FROM PUBLIC;
+REVOKE ALL ON FUNCTION change_password(TEXT, TEXT, TEXT) FROM PUBLIC;
+REVOKE ALL ON FUNCTION admin_create_user(TEXT, VARCHAR, VARCHAR, VARCHAR, VARCHAR) FROM PUBLIC;
+-- Only grant to authenticated or anon if required via Supabase postgREST, but since they use anon key, we must grant back to anon.
+GRANT EXECUTE ON FUNCTION login_user_v2(VARCHAR, VARCHAR) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public_get_khoatuyensinh() TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public_get_doituong() TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION register_hocvien(jsonb) TO anon, authenticated;
+
+GRANT EXECUTE ON FUNCTION get_khoahoc(TEXT) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION get_hocvien(TEXT, TEXT, TEXT) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION get_dashboard_stats(TEXT) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION get_thongbao(TEXT) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION get_cache_data(TEXT) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION admin_save_khoahoc(TEXT, TEXT, jsonb) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION admin_delete_khoahoc(TEXT, TEXT) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION admin_save_hocvien(TEXT, TEXT, jsonb) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION admin_delete_hocvien(TEXT, TEXT) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION mark_read(TEXT, INT) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION change_password(TEXT, TEXT, TEXT) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION admin_create_user(TEXT, VARCHAR, VARCHAR, VARCHAR, VARCHAR) TO anon, authenticated;
 
 
 -- ==========================================
@@ -523,43 +656,67 @@ INSERT INTO CauHinh (ConfigKey, ConfigValue) VALUES
 ('ChanTrang', '© 2024 Trung tâm GDNN-GDTX khu vực Đăk Hà'),
 ('MauChuDao', '#004085');
 
--- 1. Tài khoản (Mật khẩu mặc định là: 123456)
-SELECT create_user('admin', 'Ban Giám Đốc Trung Tâm', 'Ban Giám đốc', 'admin123');
-SELECT create_user('giaovu1', 'Nguyễn Thị Giáo Vụ', 'Giáo vụ', '123456');
-SELECT create_user('gv_nam', 'Trần Văn Nam', 'Giáo viên', '123456');
-SELECT create_user('gv_ha', 'Lê Thị Hà', 'Giáo viên', '123456');
+-- Khởi tạo tài khoản admin đầu tiên bằng block nặc danh
+DO $$
+DECLARE
+    v_hash TEXT;
+BEGIN
+    v_hash := crypt('admin123', gen_salt('bf'));
+    INSERT INTO Users (Username, HoTen, Role, TrangThai, MatKhauHash, Salt, PhaiDoiMatKhau)
+    VALUES ('admin', 'Ban Giám Đốc Trung Tâm', 'Ban Giám đốc', 'Hoạt động', v_hash, 'deprecated', TRUE)
+    ON CONFLICT (Username) DO NOTHING;
+END $$;
 
--- 2. Đối tượng chính sách
-INSERT INTO DoiTuong (TenDoiTuong, ChinhSach, GhiChu) VALUES
-('Người khuyết tật', 'Hỗ trợ 100% học phí, 30.000đ/ngày ăn', 'Kèm giấy xác nhận khuyết tật'),
-('Dân tộc thiểu số', 'Hỗ trợ 100% học phí, 30.000đ/ngày ăn', 'Bản sao CCCD'),
-('Hộ nghèo / Cận nghèo', 'Hỗ trợ 100% học phí, 30.000đ/ngày ăn', 'Giấy chứng nhận hộ nghèo'),
-('Bộ đội xuất ngũ', 'Hỗ trợ theo thẻ học nghề', 'Thẻ học nghề còn hạn');
+-- ==== QUẢN LÝ NGƯỜI DÙNG (ADMIN ONLY) ====
 
--- 3. Ngành nghề đào tạo
-INSERT INTO Nghedaotao (TenNghe, LoaiHinh, SoMoDun, ThoiGianDaoTao, SoGioDaoTao) VALUES
-('Nề - Hoàn thiện', 'Sơ cấp', 5, 3, 300),
-('Khai thác mủ cao su', 'Dưới 3 tháng', 3, 2, 200),
-('Sửa chữa máy nông nghiệp', 'Sơ cấp', 4, 3, 250),
-('Trồng và chăm sóc sầu riêng', 'Dưới 3 tháng', 2, 1, 100);
+CREATE OR REPLACE FUNCTION admin_get_users(p_token TEXT)
+RETURNS json AS $$
+DECLARE
+    v_user VARCHAR;
+    v_role VARCHAR;
+    v_result json;
+BEGIN
+    v_user := verify_token(p_token);
+    IF v_user IS NULL THEN RETURN json_build_object('success', false, 'message', 'Unauthorized'); END IF;
 
--- 4. Khóa học / Lớp học mẫu
-INSERT INTO Khoahoc (MaKhoa, TenKhoa, MaNghe, GVCN_Email, TrangThai, DiaDiemDaoTao, TuNgay, DenNgay) VALUES
-('K2026-001', 'Lớp Nề hoàn thiện - Thôn 1', 1, 'gv_nam', 'Đang đào tạo', 'Hội trường Thôn 1, xã Đăk Ui', '2026-01-10', '2026-04-10'),
-('K2026-002', 'Lớp Cao su - Xã Ngọc Réo', 2, 'gv_ha', 'Tuyển sinh', 'UBND xã Ngọc Réo', NULL, NULL);
+    SELECT Role INTO v_role FROM Users WHERE Username = v_user;
+    IF v_role <> 'Ban Giám đốc' THEN RETURN json_build_object('success', false, 'message', 'Forbidden'); END IF;
 
--- 5. Học viên mẫu
-INSERT INTO Hocvien (MaHV, MaKhoa, HoTen, GioiTinh, NgaySinh, SoCC, NoiCC, DanToc, TonGiao, TrinhDoVH, HKTT, NoiCuTru, Dienthoai, MaDoiTuong, ViecLamSauDaoTao, TrangThaiDuyet, DiemMD1, DiemMD2, DiemMD3, DiemMD4, DiemMD5, TongKet, XepLoai) VALUES
-('K2026-001-01', 'K2026-001', 'A THAO', 'Nam', '2000-05-15', '064000123456', 'Cục CS QLHC', 'Xơ Đăng', 'Không', 'THCS', 'Thôn 1, Đăk Ui', 'Thôn 1, Đăk Ui', '0912345678', 2, 'Tự tạo việc làm', 'Đã duyệt', 7.5, 8.0, 7.0, 8.5, 8.0, 7.8, 'Khá'),
-('K2026-001-02', 'K2026-001', 'Y MLINH', 'Nữ', '2001-10-20', '064000654321', 'Cục CS QLHC', 'Xơ Đăng', 'Không', 'Tiểu học', 'Thôn 1, Đăk Ui', 'Thôn 1, Đăk Ui', '0987654321', 2, 'Được ký hợp đồng lao động', 'Đã duyệt', 4.5, 6.0, 5.5, 6.0, 5.0, 5.4, 'Không đạt'),
-('K2026-001-03', 'K2026-001', 'NGUYỄN VĂN BÌNH', 'Nam', '1995-02-28', '064000111222', 'Kon Tum', 'Kinh', 'Không', 'THPT', 'Thôn 2, Đăk Ui', 'Thôn 2, Đăk Ui', '0909112233', NULL, 'Được doanh nghiệp, đơn vị bao tiêu sản phẩm', 'Đã duyệt', 9.0, 9.5, 8.5, 9.0, 9.0, 9.0, 'Xuất sắc');
+    WITH QueryUsers AS (
+        SELECT Username as "Username", HoTen as "HoTen", Role as "Role", TrangThai as "TrangThai",
+               LanDangNhapSai as "LanDangNhapSai", ThoiGianKhoa as "ThoiGianKhoa"
+        FROM Users ORDER BY Role ASC, Username ASC
+    )
+    SELECT COALESCE(json_agg(row_to_json(t)), '[]') INTO v_result FROM QueryUsers t;
 
-INSERT INTO Hocvien (MaHV, MaKhoa, HoTen, GioiTinh, NgaySinh, SoCC, NoiCC, DanToc, TonGiao, TrinhDoVH, HKTT, NoiCuTru, Dienthoai, MaDoiTuong, ViecLamSauDaoTao, TrangThaiDuyet) VALUES
-('K2026-002-01', 'K2026-002', 'LÊ THỊ HOA', 'Nữ', '1998-12-05', '064000333444', 'Kon Tum', 'Kinh', 'Không', 'THPT', 'Xã Ngọc Réo', 'Xã Ngọc Réo', '0977889900', 3, 'Đi làm việc có thời hạn ở nước ngoài', 'Chờ duyệt'),
-('K2026-002-02', 'K2026-002', 'A TEO', 'Nam', '2003-08-14', '064000555666', 'Cục CS QLHC', 'Ba Na', 'Không', 'Chưa qua đào tạo', 'Xã Ngọc Réo', 'Xã Ngọc Réo', '0933445566', 2, 'Tự tạo việc làm', 'Chờ duyệt');
+    RETURN json_build_object('success', true, 'data', v_result);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
--- 6. Thông báo mẫu
-INSERT INTO ThongBao (NguoiNhan, NoiDung, MaKhoa, DaDoc) VALUES
-('admin', 'Hệ thống đã được khởi tạo thành công cùng với dữ liệu mẫu.', NULL, FALSE),
-('gv_ha', 'Học viên mới: LÊ THỊ HOA vừa đăng ký lớp K2026-002. Vui lòng kiểm tra.', 'K2026-002', FALSE),
-('gv_ha', 'Học viên mới: A TEO vừa đăng ký lớp K2026-002. Vui lòng kiểm tra.', 'K2026-002', FALSE);
+CREATE OR REPLACE FUNCTION admin_toggle_user(p_token TEXT, p_username VARCHAR)
+RETURNS json AS $$
+DECLARE
+    v_admin VARCHAR;
+    v_role VARCHAR;
+BEGIN
+    v_admin := verify_token(p_token);
+    IF v_admin IS NULL THEN RETURN json_build_object('success', false, 'message', 'Unauthorized'); END IF;
+
+    SELECT Role INTO v_role FROM Users WHERE Username = v_admin;
+    IF v_role <> 'Ban Giám đốc' THEN RETURN json_build_object('success', false, 'message', 'Forbidden'); END IF;
+
+    IF v_admin = p_username THEN RETURN json_build_object('success', false, 'message', 'Không thể tự khóa chính mình'); END IF;
+
+    UPDATE Users SET TrangThai = CASE WHEN TrangThai = 'Hoạt động' THEN 'Bị khóa' ELSE 'Hoạt động' END,
+                     LanDangNhapSai = 0, ThoiGianKhoa = NULL
+    WHERE Username = p_username;
+
+    -- Revoke sessions if locked
+    DELETE FROM UserSessions WHERE Username = p_username AND (SELECT TrangThai FROM Users WHERE Username = p_username) = 'Bị khóa';
+
+    RETURN json_build_object('success', true);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+GRANT EXECUTE ON FUNCTION admin_get_users(TEXT) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION admin_toggle_user(TEXT, VARCHAR) TO anon, authenticated;

@@ -1,8 +1,13 @@
 const fs = require('fs');
 const path = require('path');
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'YOUR_SUPABASE_URL_HERE';
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY || 'YOUR_SUPABASE_ANON_KEY_HERE';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  console.error("❌ THIẾU BIẾN MÔI TRƯỜNG: Vui lòng thiết lập NEXT_PUBLIC_SUPABASE_URL và NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY trên Vercel trước khi Deploy.");
+  process.exit(1);
+}
 
 const configContent = `
 const SUPABASE_URL = '${supabaseUrl}';

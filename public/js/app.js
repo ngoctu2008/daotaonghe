@@ -73,7 +73,7 @@ function checkLoginStatus() {
         appWrapper.style.display = 'block';
         document.getElementById('currentUser').innerText = escapeHTML(currentUser.HoTen);
         applyRBAC();
-        initAppData();
+        initAppData(); if(currentUser.PhaiDoiMatKhau) { setTimeout(() => appDoiMatKhau.showModal(true), 500); }
     } else {
         loginScreen.style.display = 'flex';
         appWrapper.style.display = 'none';
@@ -109,6 +109,9 @@ async function handleLogin(e) {
 
 function applyRBAC() {
     const isManager = ['Ban Giám đốc', 'Giáo vụ'].includes(currentUser.Role);
+    const isBgd = currentUser.Role === 'Ban Giám đốc';
+    if(isBgd) document.querySelectorAll('.bgd-only').forEach(el => el.classList.remove('d-none'));
+    else document.querySelectorAll('.bgd-only').forEach(el => el.classList.add('d-none'));
     if(isManager) {
         document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('d-none'));
     } else {
@@ -138,6 +141,7 @@ function loadViewData(viewId) {
     if(viewId === 'view-hocvien') initHocVienView();
     if(viewId === 'view-diem') initDiemView();
     if(viewId === 'view-danhmuc') loadDanhMuc();
+    if(viewId === 'view-users') loadUsers();
 }
 
 // ---- DASHBOARD ----
@@ -208,10 +212,10 @@ async function loadDsKhoaHoc() {
                 <td class="text-center fw-bold">${tongSo - choDuyet}</td>
                 <td class="text-center text-danger fw-bold">${choDuyet > 0 ? choDuyet : '-'}</td>
                 <td>
-                    <button class="btn btn-sm btn-outline-info" onclick="xemHocVienKhoa('${escapeHTML(k.MaKhoa)}')" title="Quản lý Học viên"><i class="fas fa-users"></i></button>
-                    <button class="btn btn-sm btn-outline-primary" onclick="showQR('${escapeHTML(k.MaKhoa)}', '${escapeHTML(k.TenKhoa)}')" title="Mã QR"><i class="fas fa-qrcode"></i></button>
-                    <button class="btn btn-sm btn-outline-success admin-only" onclick="editKhoaHoc('${escapeHTML(k.MaKhoa)}')" title="Sửa"><i class="fas fa-edit"></i></button>
-                    <button class="btn btn-sm btn-outline-danger admin-only" onclick="deleteKhoaHoc('${escapeHTML(k.MaKhoa)}')" title="Xóa"><i class="fas fa-trash"></i></button>
+                    <button class="btn btn-sm btn-outline-info action-btn" data-action="xem-hv" data-id="${escapeHTML(k.MaKhoa)}" title="Quản lý Học viên"><i class="fas fa-users"></i></button>
+                    <button class="btn btn-sm btn-outline-primary action-btn" data-action="qr" data-id="${escapeHTML(k.MaKhoa)}" data-name="${escapeHTML(k.TenKhoa)}" title="Mã QR"><i class="fas fa-qrcode"></i></button>
+                    <button class="btn btn-sm btn-outline-success admin-only action-btn" data-action="edit-kh" data-id="${escapeHTML(k.MaKhoa)}" title="Sửa"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-sm btn-outline-danger admin-only action-btn" data-action="del-kh" data-id="${escapeHTML(k.MaKhoa)}" title="Xóa"><i class="fas fa-trash"></i></button>
                 </td>
             </tr>
         `;
@@ -317,15 +321,15 @@ async function loadHocVien() {
 
     tbody.innerHTML = '';
     data.data.forEach(h => {
-        const btnDuyet = h.TrangThaiDuyet === 'Chờ duyệt' ? `<button class="btn btn-sm btn-warning" onclick="duyetHocVien('${escapeHTML(h.MaHV)}')">Duyệt</button>` : `<span class="badge bg-success">Đã duyệt</span>`;
+        const btnDuyet = h.TrangThaiDuyet === 'Chờ duyệt' ? `<button class="btn btn-sm btn-warning action-btn" data-action="duyet-hv" data-id="${escapeHTML(h.MaHV)}">Duyệt</button>` : `<span class="badge bg-success">Đã duyệt</span>`;
         tbody.innerHTML += `
             <tr>
                 <td>${escapeHTML(h.MaHV)}</td><td class="fw-bold">${escapeHTML(h.HoTen)}</td><td>${escapeHTML(h.MaKhoa)}</td>
                 <td>${h.NgaySinh ? escapeHTML(new Date(h.NgaySinh).toLocaleDateString('vi-VN')) : ''}</td>
                 <td>${h.DoiTuong ? escapeHTML(h.DoiTuong.TenDoiTuong) : ''}</td><td>${btnDuyet}</td>
                 <td>
-                    <button class="btn btn-sm btn-outline-success admin-only" onclick="editHocVien('${escapeHTML(h.MaHV)}')" title="Sửa"><i class="fas fa-edit"></i></button>
-                    <button class="btn btn-sm btn-outline-danger admin-only" onclick="xoaHocVien('${escapeHTML(h.MaHV)}')" title="Xóa"><i class="fas fa-trash"></i></button>
+                    <button class="btn btn-sm btn-outline-success admin-only action-btn" data-action="edit-hv" data-id="${escapeHTML(h.MaHV)}" title="Sửa"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-sm btn-outline-danger admin-only action-btn" data-action="del-hv" data-id="${escapeHTML(h.MaHV)}" title="Xóa"><i class="fas fa-trash"></i></button>
                 </td>
             </tr>
         `;
@@ -502,3 +506,152 @@ function loadDanhMuc() {
     tbDt.innerHTML = '';
     cachedDoiTuong.forEach(d => { tbDt.innerHTML += `<tr><td>${d.MaDoiTuong}</td><td>${escapeHTML(d.TenDoiTuong)}</td></tr>`; });
 }
+
+// ---- ĐỔI MẬT KHẨU ----
+window.appDoiMatKhau = {
+    showModal: function(isForce = false) {
+        document.getElementById('frmDoiMatKhau').reset();
+        document.getElementById('dmk-alert').style.display = isForce ? 'block' : 'none';
+
+        const modalEl = document.getElementById('modalDoiMatKhau');
+        const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl, {
+            backdrop: isForce ? 'static' : true,
+            keyboard: !isForce
+        });
+
+        if(isForce) {
+            modalEl.querySelector('.btn-close').style.display = 'none';
+        } else {
+            modalEl.querySelector('.btn-close').style.display = 'block';
+        }
+
+        modal.show();
+    }
+};
+
+document.getElementById('frmDoiMatKhau').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const oldPass = document.getElementById('dmk_old').value;
+    const newPass = document.getElementById('dmk_new').value;
+    const confirmPass = document.getElementById('dmk_confirm').value;
+
+    if(newPass !== confirmPass) {
+        alert("Mật khẩu xác nhận không khớp!");
+        return;
+    }
+
+    const supabaseMod = await import('./supabase-client.js');
+    const { data } = await supabaseMod.supabase.rpc('change_password', {
+        p_token: currentToken,
+        p_old_pass: oldPass,
+        p_new_pass: newPass
+    });
+
+    if(!data.success) {
+        alert("Lỗi: " + data.message);
+    } else {
+        alert("Đổi mật khẩu thành công! Vui lòng đăng nhập lại.");
+        document.getElementById('btnLogout').click();
+    }
+});
+
+// ---- QUẢN LÝ TÀI KHOẢN ----
+async function loadUsers() {
+    const tbody = document.getElementById('tblUsers');
+    const supabaseMod = await import('./supabase-client.js');
+    const { data } = await supabaseMod.supabase.rpc('admin_get_users', { p_token: currentToken });
+
+    if(!data || !data.success) { tbody.innerHTML = '<tr><td colspan="6">Lỗi tải dữ liệu</td></tr>'; return; }
+
+    tbody.innerHTML = '';
+    data.data.forEach(u => {
+        let badgeStatus = u.TrangThai === 'Hoạt động' ? 'bg-success' : 'bg-danger';
+
+        let bruteHtml = '';
+        if(u.LanDangNhapSai > 0) {
+            bruteHtml = `<span class="badge bg-warning text-dark">${u.LanDangNhapSai} lần sai</span>`;
+            if(u.ThoiGianKhoa && new Date(u.ThoiGianKhoa) > new Date()) {
+                bruteHtml += `<br><small class="text-danger">Khóa đến ${new Date(u.ThoiGianKhoa).toLocaleTimeString('vi-VN')}</small>`;
+            }
+        } else {
+            bruteHtml = `<span class="badge bg-light text-muted">Bình thường</span>`;
+        }
+
+        const btnToggle = `<button class="btn btn-sm btn-outline-${u.TrangThai === 'Hoạt động' ? 'danger' : 'success'} action-btn" data-action="toggle-user" data-id="${escapeHTML(u.Username)}" title="${u.TrangThai === 'Hoạt động' ? 'Khóa' : 'Mở khóa'}"><i class="fas fa-${u.TrangThai === 'Hoạt động' ? 'lock' : 'unlock'}"></i></button>`;
+
+        tbody.innerHTML += `
+            <tr>
+                <td class="fw-bold">${escapeHTML(u.Username)}</td>
+                <td>${escapeHTML(u.HoTen)}</td>
+                <td>${escapeHTML(u.Role)}</td>
+                <td><span class="badge ${badgeStatus}">${escapeHTML(u.TrangThai)}</span></td>
+                <td>${bruteHtml}</td>
+                <td>
+                    ${btnToggle}
+                </td>
+            </tr>
+        `;
+    });
+}
+
+window.appUsers = {
+    showModal: function() {
+        document.getElementById('frmAddUser').reset();
+        new bootstrap.Modal(document.getElementById('modalAddUser')).show();
+    }
+};
+
+document.getElementById('frmAddUser').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const u = document.getElementById('u_username').value;
+    const h = document.getElementById('u_hoten').value;
+    const r = document.getElementById('u_role').value;
+    const p = document.getElementById('u_pass').value;
+
+    const supabaseMod = await import('./supabase-client.js');
+    const { data } = await supabaseMod.supabase.rpc('admin_create_user', {
+        p_token: currentToken,
+        p_username: u,
+        p_hoten: h,
+        p_role: r,
+        p_password: p
+    });
+
+    if(!data.success) {
+        alert("Lỗi: " + data.message);
+    } else {
+        bootstrap.Modal.getInstance(document.getElementById('modalAddUser')).hide();
+        loadUsers();
+    }
+});
+
+window.toggleUser = async function(username) {
+    if(confirm(`Bạn có chắc muốn thay đổi trạng thái tài khoản ${username}?`)) {
+        const supabaseMod = await import('./supabase-client.js');
+        const { data } = await supabaseMod.supabase.rpc('admin_toggle_user', { p_token: currentToken, p_username: username });
+        if(!data.success) alert("Lỗi: " + data.message);
+        else loadUsers();
+    }
+}
+
+// Global Event Delegation cho các nút thao tác động (Tránh XSS qua inline onclick)
+document.addEventListener('click', function(e) {
+    const btn = e.target.closest('.action-btn');
+    if(!btn) return;
+
+    e.preventDefault();
+    const action = btn.getAttribute('data-action');
+    const id = btn.getAttribute('data-id');
+    const name = btn.getAttribute('data-name');
+
+    if(action === 'xem-hv') window.xemHocVienKhoa(id);
+    if(action === 'qr') window.showQR(id, name);
+    if(action === 'edit-kh') window.editKhoaHoc(id);
+    if(action === 'del-kh') window.deleteKhoaHoc(id);
+
+    if(action === 'duyet-hv') window.duyetHocVien(id);
+    if(action === 'edit-hv') window.editHocVien(id);
+    if(action === 'del-hv') window.xoaHocVien(id);
+
+    if(action === 'toggle-user') window.toggleUser(id);
+});
