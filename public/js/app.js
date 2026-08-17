@@ -1,4 +1,4 @@
-import { supabase } from './supabase-client.js';
+
 
 // ---- GLOBAL STATE ----
 let currentUser = null;
@@ -87,7 +87,11 @@ async function handleLogin(e) {
     const alertBox = document.getElementById('loginAlert');
 
     try {
-        const { data, error } = await supabase.rpc('login_user_v2', { p_username: u, p_password: p });
+        // Load dynamically initialized Supabase client
+        const supabaseMod = await import('./supabase-client.js');
+        const supabaseClient = supabaseMod.supabase;
+
+        const { data, error } = await supabaseClient.rpc('login_user_v2', { p_username: u, p_password: p });
         if (error) throw error;
         if (data.success) {
             sessionStorage.setItem('user', JSON.stringify(data.user));
@@ -119,7 +123,8 @@ async function initAppData() {
 }
 
 async function loadCacheData() {
-    const { data } = await supabase.rpc('get_cache_data', { p_token: currentToken });
+    const supabaseMod = await import('./supabase-client.js');
+    const { data } = await supabaseMod.supabase.rpc('get_cache_data', { p_token: currentToken });
     if(data && data.success) {
         cachedNghe = data.data.Nghedaotao || [];
         cachedDoiTuong = data.data.DoiTuong || [];
@@ -137,7 +142,8 @@ function loadViewData(viewId) {
 
 // ---- DASHBOARD ----
 async function loadDashboard() {
-    const { data } = await supabase.rpc('get_dashboard_stats', { p_token: currentToken });
+    const supabaseMod = await import('./supabase-client.js');
+    const { data } = await supabaseMod.supabase.rpc('get_dashboard_stats', { p_token: currentToken });
     if(data && data.success) {
         document.getElementById('stat-lop').innerText = data.data.cLop || 0;
         document.getElementById('stat-hvdanghoc').innerText = data.data.cHv || 0;
@@ -148,7 +154,8 @@ async function loadDashboard() {
 
 // ---- THÔNG BÁO ----
 async function loadThongBao() {
-    const { data } = await supabase.rpc('get_thongbao', { p_token: currentToken });
+    const supabaseMod = await import('./supabase-client.js');
+    const { data } = await supabaseMod.supabase.rpc('get_thongbao', { p_token: currentToken });
     if(!data || !data.success) return;
 
     const ul = document.getElementById('listThongBao');
@@ -171,21 +178,23 @@ async function loadThongBao() {
     badge.innerText = unread;
 }
 window.markRead = async function(maTb) {
-    await supabase.rpc('mark_read', { p_token: currentToken, p_matb: maTb });
+    const supabaseMod = await import('./supabase-client.js');
+    await supabaseMod.supabase.rpc('mark_read', { p_token: currentToken, p_matb: maTb });
     loadThongBao();
 }
 
 // ---- MODULE: KHÓA HỌC ----
 async function loadDsKhoaHoc() {
+    const supabaseMod = await import('./supabase-client.js');
     const tbody = document.getElementById('tblKhoaHoc');
-    const { data } = await supabase.rpc('get_khoahoc', { p_token: currentToken });
+    const { data } = await supabaseMod.supabase.rpc('get_khoahoc', { p_token: currentToken });
 
     if(!data || !data.success) { tbody.innerHTML = '<tr><td colspan="7">Lỗi tải dữ liệu</td></tr>'; return; }
 
     tbody.innerHTML = '';
     data.data.forEach(k => {
-        const tongSo = k.hocvien.length;
-        const choDuyet = k.hocvien.filter(h => h.TrangThaiDuyet === 'Chờ duyệt').length;
+        const tongSo = k.Hocvien ? k.Hocvien.length : 0;
+        const choDuyet = k.Hocvien ? k.Hocvien.filter(h => h.TrangThaiDuyet === 'Chờ duyệt').length : 0;
         let badgeClass = 'badge-tuyensinh';
         if(k.TrangThai === 'Đang đào tạo') badgeClass = 'badge-daotao';
         if(k.TrangThai === 'Kết thúc khóa học') badgeClass = 'badge-ketthuc';
@@ -193,7 +202,7 @@ async function loadDsKhoaHoc() {
         const row = `
             <tr>
                 <td class="fw-bold text-primary">${escapeHTML(k.MaKhoa)}</td>
-                <td>${escapeHTML(k.TenKhoa)}<br><small class="text-muted">${k.nghedaotao ? escapeHTML(k.nghedaotao.TenNghe) : ''}</small></td>
+                <td>${escapeHTML(k.TenKhoa)}<br><small class="text-muted">${k.Nghedaotao ? escapeHTML(k.Nghedaotao.TenNghe) : ''}</small></td>
                 <td>${getUserName(k.GVCN_Email)}</td>
                 <td><span class="badge ${badgeClass}">${escapeHTML(k.TrangThai)}</span></td>
                 <td class="text-center fw-bold">${tongSo - choDuyet}</td>
@@ -241,7 +250,8 @@ window.appKhoaHoc = {
 };
 
 window.editKhoaHoc = async function(maKhoa) {
-    const { data } = await supabase.rpc('get_khoahoc', { p_token: currentToken });
+    const supabaseMod = await import('./supabase-client.js');
+    const { data } = await supabaseMod.supabase.rpc('get_khoahoc', { p_token: currentToken });
     const kh = data.data.find(k => k.MaKhoa === maKhoa);
     if(kh) {
         appKhoaHoc.showModal();
@@ -260,7 +270,8 @@ window.editKhoaHoc = async function(maKhoa) {
 
 window.deleteKhoaHoc = async function(maKhoa) {
     if(confirm('Chắc chắn xóa khóa học này và tất cả học viên thuộc khóa?')) {
-        const { data } = await supabase.rpc('admin_delete_khoahoc', { p_token: currentToken, p_makhoa: maKhoa });
+        const supabaseMod = await import('./supabase-client.js');
+        const { data } = await supabaseMod.supabase.rpc('admin_delete_khoahoc', { p_token: currentToken, p_makhoa: maKhoa });
         if(!data.success) alert("Lỗi xóa: " + data.message); else { loadDsKhoaHoc(); loadDashboard(); }
     }
 }
@@ -277,14 +288,16 @@ async function saveKhoaHoc(e) {
         TuNgay: document.getElementById('kh_TuNgay').value || null,
         DenNgay: document.getElementById('kh_DenNgay').value || null
     };
-    const { data } = await supabase.rpc('admin_save_khoahoc', { p_token: currentToken, p_mode: document.getElementById('kh_mode').value, p_data: dataObj });
+    const supabaseMod = await import('./supabase-client.js');
+    const { data } = await supabaseMod.supabase.rpc('admin_save_khoahoc', { p_token: currentToken, p_mode: document.getElementById('kh_mode').value, p_data: dataObj });
     if(!data.success) alert("Lỗi: " + data.message);
     else { bootstrap.Modal.getInstance(document.getElementById('modalKhoaHoc')).hide(); loadDsKhoaHoc(); loadDashboard(); }
 }
 
 // ---- MODULE: HỌC VIÊN ----
 async function initHocVienView() {
-    const { data } = await supabase.rpc('get_khoahoc', { p_token: currentToken });
+    const supabaseMod = await import('./supabase-client.js');
+    const { data } = await supabaseMod.supabase.rpc('get_khoahoc', { p_token: currentToken });
     const filter = document.getElementById('filterKhoaHoc_HV');
     filter.innerHTML = '<option value="">-- Tất cả các khóa --</option>';
     if(data && data.success) {
@@ -298,7 +311,8 @@ async function loadHocVien() {
     const ttDuyet = document.getElementById('filterDuyet_HV').value;
     const tbody = document.getElementById('tblHocVien');
 
-    const { data } = await supabase.rpc('get_hocvien', { p_token: currentToken, p_makhoa: maKhoa, p_ttduyet: ttDuyet });
+    const supabaseMod = await import('./supabase-client.js');
+    const { data } = await supabaseMod.supabase.rpc('get_hocvien', { p_token: currentToken, p_makhoa: maKhoa, p_ttduyet: ttDuyet });
     if(!data || !data.success) { tbody.innerHTML = '<tr><td colspan="7">Lỗi</td></tr>'; return; }
 
     tbody.innerHTML = '';
@@ -308,7 +322,7 @@ async function loadHocVien() {
             <tr>
                 <td>${escapeHTML(h.MaHV)}</td><td class="fw-bold">${escapeHTML(h.HoTen)}</td><td>${escapeHTML(h.MaKhoa)}</td>
                 <td>${h.NgaySinh ? escapeHTML(new Date(h.NgaySinh).toLocaleDateString('vi-VN')) : ''}</td>
-                <td>${h.doituong ? escapeHTML(h.doituong.TenDoiTuong) : ''}</td><td>${btnDuyet}</td>
+                <td>${h.DoiTuong ? escapeHTML(h.DoiTuong.TenDoiTuong) : ''}</td><td>${btnDuyet}</td>
                 <td>
                     <button class="btn btn-sm btn-outline-success admin-only" onclick="editHocVien('${escapeHTML(h.MaHV)}')" title="Sửa"><i class="fas fa-edit"></i></button>
                     <button class="btn btn-sm btn-outline-danger admin-only" onclick="xoaHocVien('${escapeHTML(h.MaHV)}')" title="Xóa"><i class="fas fa-trash"></i></button>
@@ -322,8 +336,9 @@ async function loadHocVien() {
 window.appHocVien = {
     showModal: async function() {
         document.getElementById('frmSaveHocVien').reset();
-        document.getElementById('hv_mode').value = 'add';
-        const { data } = await supabase.rpc('get_khoahoc', { p_token: currentToken });
+        document.getElementById('hv_mode').value = 'add'; document.getElementById('hv_MaKhoa').disabled = false;
+        const supabaseMod = await import('./supabase-client.js');
+        const { data } = await supabaseMod.supabase.rpc('get_khoahoc', { p_token: currentToken });
         document.getElementById('hv_MaKhoa').innerHTML = data.data.map(k => `<option value="${escapeHTML(k.MaKhoa)}">${escapeHTML(k.MaKhoa)}</option>`).join('');
         document.getElementById('hv_MaDoiTuong').innerHTML = '<option value="">Không</option>' + cachedDoiTuong.map(d => `<option value="${d.MaDoiTuong}">${escapeHTML(d.TenDoiTuong)}</option>`).join('');
         new bootstrap.Modal(document.getElementById('modalHocVien')).show();
@@ -331,13 +346,14 @@ window.appHocVien = {
 };
 
 window.editHocVien = async function(maHv) {
-    const { data } = await supabase.rpc('get_hocvien', { p_token: currentToken });
+    const supabaseMod = await import('./supabase-client.js');
+    const { data } = await supabaseMod.supabase.rpc('get_hocvien', { p_token: currentToken });
     const hv = data.data.find(h => h.MaHV === maHv);
     if(hv) {
         await appHocVien.showModal();
         document.getElementById('hv_mode').value = 'edit';
         document.getElementById('hv_MaHV').value = hv.MaHV;
-        document.getElementById('hv_MaKhoa').value = hv.MaKhoa;
+        document.getElementById('hv_MaKhoa').value = hv.MaKhoa; document.getElementById('hv_MaKhoa').disabled = true;
         document.getElementById('hv_TrangThaiDuyet').value = hv.TrangThaiDuyet;
         document.getElementById('hv_HoTen').value = hv.HoTen;
         document.getElementById('hv_GioiTinh').value = hv.GioiTinh || 'Nam';
@@ -363,32 +379,36 @@ async function saveHocVien(e) {
         MaDoiTuong: document.getElementById('hv_MaDoiTuong').value ? parseInt(document.getElementById('hv_MaDoiTuong').value) : null,
         ViecLamSauDaoTao: document.getElementById('hv_ViecLam').value
     };
-    const { data } = await supabase.rpc('admin_save_hocvien', { p_token: currentToken, p_mode: document.getElementById('hv_mode').value, p_data: dataObj });
+    const supabaseMod = await import('./supabase-client.js');
+    const { data } = await supabaseMod.supabase.rpc('admin_save_hocvien', { p_token: currentToken, p_mode: document.getElementById('hv_mode').value, p_data: dataObj });
     if(!data.success) alert("Lỗi: " + data.message); else { bootstrap.Modal.getInstance(document.getElementById('modalHocVien')).hide(); loadHocVien(); loadDashboard(); }
 }
 
 window.duyetHocVien = async function(maHv) {
     if(confirm('Chấp nhận học viên này vào lớp chính thức?')) {
-        await supabase.rpc('admin_save_hocvien', { p_token: currentToken, p_mode: 'edit', p_data: { MaHV: maHv, TrangThaiDuyet: 'Đã duyệt' } });
+        const supabaseMod = await import('./supabase-client.js');
+        await supabaseMod.supabase.rpc('admin_save_hocvien', { p_token: currentToken, p_mode: 'edit', p_data: { MaHV: maHv, TrangThaiDuyet: 'Đã duyệt' } });
         loadHocVien(); loadDashboard();
     }
 }
 
 window.xoaHocVien = async function(maHv) {
     if(confirm('CẢNH BÁO: Xóa học viên này?')) {
-        await supabase.rpc('admin_delete_hocvien', { p_token: currentToken, p_mahv: maHv });
+        const supabaseMod = await import('./supabase-client.js');
+        await supabaseMod.supabase.rpc('admin_delete_hocvien', { p_token: currentToken, p_mahv: maHv });
         loadHocVien(); loadDashboard();
     }
 }
 
 // ---- MODULE: CHẤM ĐIỂM ----
 async function initDiemView() {
-    const { data } = await supabase.rpc('get_khoahoc', { p_token: currentToken });
+    const supabaseMod = await import('./supabase-client.js');
+    const { data } = await supabaseMod.supabase.rpc('get_khoahoc', { p_token: currentToken });
     const filter = document.getElementById('filterKhoaHoc_Diem');
     filter.innerHTML = '<option value="">-- Chọn Khóa Học --</option>';
     if(data && data.success) {
         data.data.forEach(k => {
-            const soMd = k.nghedaotao ? k.nghedaotao.SoMoDun : 1;
+            const soMd = k.Nghedaotao ? k.Nghedaotao.SoMoDun : 1;
             filter.innerHTML += `<option value="${escapeHTML(k.MaKhoa)}" data-somd="${soMd}">${escapeHTML(k.MaKhoa)} - ${escapeHTML(k.TenKhoa)}</option>`;
         });
     }
@@ -401,7 +421,8 @@ async function loadBangDiem() {
     if(!maKhoa) return;
 
     const soMd = parseInt(filter.options[filter.selectedIndex].getAttribute('data-somd')) || 5;
-    const { data } = await supabase.rpc('get_hocvien', { p_token: currentToken, p_makhoa: maKhoa, p_ttduyet: 'Đã duyệt' });
+    const supabaseMod = await import('./supabase-client.js');
+    const { data } = await supabaseMod.supabase.rpc('get_hocvien', { p_token: currentToken, p_makhoa: maKhoa, p_ttduyet: 'Đã duyệt' });
 
     if(!data || !data.success) return;
     const hocviens = data.data;
@@ -461,7 +482,8 @@ window.saveDiem = async function(maHv, soMd) {
     dataToSave.TongKet = document.getElementById(`tk_${maHv}`).value !== '' ? parseFloat(document.getElementById(`tk_${maHv}`).value) : null;
     dataToSave.XepLoai = document.getElementById(`xl_${maHv}`).innerText !== '' ? document.getElementById(`xl_${maHv}`).innerText : null;
 
-    const { data } = await supabase.rpc('admin_save_hocvien', { p_token: currentToken, p_mode: 'edit', p_data: dataToSave });
+    const supabaseMod = await import('./supabase-client.js');
+    const { data } = await supabaseMod.supabase.rpc('admin_save_hocvien', { p_token: currentToken, p_mode: 'edit', p_data: dataToSave });
     if(!data.success) alert("Lỗi lưu điểm");
     else {
         const btn = document.querySelector(`#row_${maHv} .btn-primary`);

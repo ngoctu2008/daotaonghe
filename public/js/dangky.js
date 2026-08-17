@@ -1,4 +1,4 @@
-import { supabase } from './supabase-client.js';
+
 
 // DOM Elements
 const loader = document.getElementById('loader');
@@ -30,7 +30,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // Load App Config
 async function loadConfig() {
-    const { data, error } = await supabase.from('CauHinh').select('*');
+    const supabaseMod = await import('./supabase-client.js');
+    const { data, error } = await supabaseMod.supabase.from('CauHinh').select('*');
     if (error) throw error;
 
     let config = {};
@@ -47,7 +48,8 @@ async function loadConfig() {
 
 // Load Active Courses using Public RPC
 async function loadKhoaHoc() {
-    const { data, error } = await supabase.rpc('public_get_khoatuyensinh');
+    const supabaseMod = await import('./supabase-client.js');
+    const { data, error } = await supabaseMod.supabase.rpc('public_get_khoatuyensinh');
 
     if (error) throw error;
     if (!data.success) throw new Error("Lỗi tải danh sách khóa học");
@@ -55,23 +57,24 @@ async function loadKhoaHoc() {
     cboMaKhoa.innerHTML = '<option value="">-- Chọn lớp đăng ký --</option>';
     data.data.forEach(khoa => {
         const option = document.createElement('option');
-        option.value = khoa.makhoa; // returned from row_to_json as lowercase keys usually or exact case
-        option.textContent = `${khoa.tenkhoa || khoa.TenKhoa} (${khoa.makhoa || khoa.MaKhoa})`;
+        option.value = khoa.MaKhoa;
+        option.textContent = `${khoa.TenKhoa} (${khoa.MaKhoa})`;
         cboMaKhoa.appendChild(option);
     });
 }
 
 // Load Policy Targets using Public RPC
 async function loadDoiTuong() {
-    const { data, error } = await supabase.rpc('public_get_doituong');
+    const supabaseMod = await import('./supabase-client.js');
+    const { data, error } = await supabaseMod.supabase.rpc('public_get_doituong');
 
     if (error) throw error;
     if (!data.success) throw new Error("Lỗi tải danh sách đối tượng");
 
     data.data.forEach(dt => {
         const option = document.createElement('option');
-        option.value = dt.madoituong || dt.MaDoiTuong;
-        option.textContent = dt.tendoituong || dt.TenDoiTuong;
+        option.value = dt.MaDoiTuong;
+        option.textContent = dt.TenDoiTuong;
         cboMaDoiTuong.appendChild(option);
     });
 }
@@ -100,7 +103,8 @@ frmDangKy.addEventListener('submit', async (e) => {
             ViecLamSauDaoTao: document.getElementById('ViecLamDuKien').value
         };
 
-        const { data, error } = await supabase.rpc('register_hocvien', { p_data: hocVienData });
+        const supabaseMod = await import('./supabase-client.js');
+        const { data, error } = await supabaseMod.supabase.rpc('register_hocvien', { p_data: hocVienData });
 
         if(error) throw error;
         if(!data.success) throw new Error(data.message || 'Lỗi không xác định');
