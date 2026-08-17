@@ -33,35 +33,27 @@ const views = document.querySelectorAll('.view-section');
 document.addEventListener('DOMContentLoaded', () => {
     checkLoginStatus();
 
-    // Login Form Submit
     document.getElementById('frmLogin').addEventListener('submit', handleLogin);
 
-    // Logout
     document.getElementById('btnLogout').addEventListener('click', () => {
         sessionStorage.removeItem('user');
         sessionStorage.removeItem('token');
         window.location.reload();
     });
 
-    // Navigation
     navLinks.forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
             const targetId = e.currentTarget.getAttribute('data-target');
-
             navLinks.forEach(l => l.classList.remove('active'));
             e.currentTarget.classList.add('active');
-
             views.forEach(v => v.classList.remove('active'));
             document.getElementById(targetId).classList.add('active');
-
             document.getElementById('page-title').innerText = e.currentTarget.innerText.trim();
-
             loadViewData(targetId);
         });
     });
 
-    // Form Event Listeners
     document.getElementById('frmSaveKhoaHoc').addEventListener('submit', saveKhoaHoc);
     document.getElementById('frmSaveHocVien').addEventListener('submit', saveHocVien);
     document.getElementById('filterKhoaHoc_HV').addEventListener('change', loadHocVien);
@@ -77,11 +69,9 @@ function checkLoginStatus() {
     if (userJson && tokenStr) {
         currentUser = JSON.parse(userJson);
         currentToken = tokenStr;
-
         loginScreen.style.display = 'none';
         appWrapper.style.display = 'block';
         document.getElementById('currentUser').innerText = escapeHTML(currentUser.HoTen);
-
         applyRBAC();
         initAppData();
     } else {
@@ -98,9 +88,7 @@ async function handleLogin(e) {
 
     try {
         const { data, error } = await supabase.rpc('login_user_v2', { p_username: u, p_password: p });
-
         if (error) throw error;
-
         if (data.success) {
             sessionStorage.setItem('user', JSON.stringify(data.user));
             sessionStorage.setItem('token', data.token);
@@ -112,7 +100,6 @@ async function handleLogin(e) {
     } catch (err) {
         alertBox.innerText = "Lỗi kết nối hoặc sai thông tin!";
         alertBox.classList.remove('d-none');
-        console.error(err);
     }
 }
 
@@ -127,22 +114,17 @@ function applyRBAC() {
 
 // ---- APP DATA INIT ----
 async function initAppData() {
-    await Promise.all([
-        loadCacheData(),
-        loadDashboard(),
-        loadThongBao()
-    ]);
+    await loadCacheData();
+    await Promise.all([loadDashboard(), loadThongBao()]);
 }
 
 async function loadCacheData() {
-    const p1 = supabase.from('Nghedaotao').select('*');
-    const p2 = supabase.from('DoiTuong').select('*');
-    const p3 = supabase.rpc('get_public_users');
-
-    const [resNghe, resDt, resUsers] = await Promise.all([p1, p2, p3]);
-    if(!resNghe.error) cachedNghe = resNghe.data;
-    if(!resDt.error) cachedDoiTuong = resDt.data;
-    if(!resUsers.error) cachedUsers = resUsers.data;
+    const { data } = await supabase.rpc('get_cache_data', { p_token: currentToken });
+    if(data && data.success) {
+        cachedNghe = data.data.Nghedaotao || [];
+        cachedDoiTuong = data.data.DoiTuong || [];
+        cachedUsers = data.data.Users || [];
+    }
 }
 
 function loadViewData(viewId) {
@@ -155,34 +137,27 @@ function loadViewData(viewId) {
 
 // ---- DASHBOARD ----
 async function loadDashboard() {
-    const { count: cLop } = await supabase.from('Khoahoc').select('*', { count: 'exact', head: true });
-    const { count: cHv } = await supabase.from('Hocvien').select('*', { count: 'exact', head: true }).eq('TrangThaiDuyet', 'Đã duyệt');
-    const { count: cCho } = await supabase.from('Hocvien').select('*', { count: 'exact', head: true }).eq('TrangThaiDuyet', 'Chờ duyệt');
-    const { count: cTn } = await supabase.from('Hocvien').select('*', { count: 'exact', head: true }).not('XepLoai', 'is', null).not('XepLoai', 'eq', 'Không đạt');
-
-    document.getElementById('stat-lop').innerText = cLop || 0;
-    document.getElementById('stat-hvdanghoc').innerText = cHv || 0;
-    document.getElementById('stat-choduyet').innerText = cCho || 0;
-    document.getElementById('stat-totnghiep').innerText = cTn || 0;
+    const { data } = await supabase.rpc('get_dashboard_stats', { p_token: currentToken });
+    if(data && data.success) {
+        document.getElementById('stat-lop').innerText = data.data.cLop || 0;
+        document.getElementById('stat-hvdanghoc').innerText = data.data.cHv || 0;
+        document.getElementById('stat-choduyet').innerText = data.data.cCho || 0;
+        document.getElementById('stat-totnghiep').innerText = data.data.cTn || 0;
+    }
 }
 
 // ---- THÔNG BÁO ----
 async function loadThongBao() {
-    let query = supabase.from('ThongBao').select('*').order('ThoiGian', { ascending: false }).limit(10);
-    if(currentUser.Role === 'Giáo viên') {
-        query = query.eq('NguoiNhan', currentUser.Username);
-    }
-
-    const { data, error } = await query;
-    if(error) return;
+    const { data } = await supabase.rpc('get_thongbao', { p_token: currentToken });
+    if(!data || !data.success) return;
 
     const ul = document.getElementById('listThongBao');
     const badge = document.getElementById('tbCount');
     let unread = 0;
 
-    if(data.length > 0) {
+    if(data.data.length > 0) {
         ul.innerHTML = '';
-        data.forEach(tb => {
+        data.data.forEach(tb => {
             if(!tb.DaDoc) unread++;
             const bgClass = tb.DaDoc ? '' : 'bg-light';
             ul.innerHTML += `
@@ -203,24 +178,14 @@ window.markRead = async function(maTb) {
 // ---- MODULE: KHÓA HỌC ----
 async function loadDsKhoaHoc() {
     const tbody = document.getElementById('tblKhoaHoc');
-    let query = supabase.from('Khoahoc').select(`
-        MaKhoa, TenKhoa, TrangThai, GVCN_Email,
-        Nghedaotao(TenNghe),
-        Hocvien(MaHV, TrangThaiDuyet)
-    `).order('MaKhoa', { ascending: false });
+    const { data } = await supabase.rpc('get_khoahoc', { p_token: currentToken });
 
-    if(currentUser.Role === 'Giáo viên') {
-        query = query.eq('GVCN_Email', currentUser.Username);
-    }
-
-    const { data, error } = await query;
-    if(error) { tbody.innerHTML = '<tr><td colspan="7">Lỗi tải dữ liệu</td></tr>'; return; }
+    if(!data || !data.success) { tbody.innerHTML = '<tr><td colspan="7">Lỗi tải dữ liệu</td></tr>'; return; }
 
     tbody.innerHTML = '';
-    data.forEach(k => {
-        const tongSo = k.Hocvien.length;
-        const choDuyet = k.Hocvien.filter(h => h.TrangThaiDuyet === 'Chờ duyệt').length;
-
+    data.data.forEach(k => {
+        const tongSo = k.hocvien.length;
+        const choDuyet = k.hocvien.filter(h => h.TrangThaiDuyet === 'Chờ duyệt').length;
         let badgeClass = 'badge-tuyensinh';
         if(k.TrangThai === 'Đang đào tạo') badgeClass = 'badge-daotao';
         if(k.TrangThai === 'Kết thúc khóa học') badgeClass = 'badge-ketthuc';
@@ -228,10 +193,7 @@ async function loadDsKhoaHoc() {
         const row = `
             <tr>
                 <td class="fw-bold text-primary">${escapeHTML(k.MaKhoa)}</td>
-                <td>
-                    ${escapeHTML(k.TenKhoa)}<br>
-                    <small class="text-muted">${k.Nghedaotao ? escapeHTML(k.Nghedaotao.TenNghe) : ''}</small>
-                </td>
+                <td>${escapeHTML(k.TenKhoa)}<br><small class="text-muted">${k.nghedaotao ? escapeHTML(k.nghedaotao.TenNghe) : ''}</small></td>
                 <td>${getUserName(k.GVCN_Email)}</td>
                 <td><span class="badge ${badgeClass}">${escapeHTML(k.TrangThai)}</span></td>
                 <td class="text-center fw-bold">${tongSo - choDuyet}</td>
@@ -259,15 +221,10 @@ window.showQR = function(maKhoa, tenKhoa) {
 }
 
 window.xemHocVienKhoa = function(maKhoa) {
-    // Chuyển view
     document.querySelector('.nav-link[data-target="view-hocvien"]').click();
-    // Đợi render combo filter
     setTimeout(() => {
         const filter = document.getElementById('filterKhoaHoc_HV');
-        if(filter) {
-            filter.value = maKhoa;
-            loadHocVien();
-        }
+        if(filter) { filter.value = maKhoa; loadHocVien(); }
     }, 300);
 }
 
@@ -276,37 +233,35 @@ window.appKhoaHoc = {
         document.getElementById('frmSaveKhoaHoc').reset();
         document.getElementById('kh_mode').value = 'add';
         document.getElementById('kh_MaKhoa').readOnly = false;
-
         document.getElementById('kh_MaNghe').innerHTML = cachedNghe.map(n => `<option value="${n.MaNghe}">${escapeHTML(n.TenNghe)}</option>`).join('');
         const gvList = cachedUsers.filter(u => u.Role === 'Giáo viên');
         document.getElementById('kh_GVCN').innerHTML = '<option value="">-- Chọn --</option>' + gvList.map(u => `<option value="${escapeHTML(u.Username)}">${escapeHTML(u.HoTen)}</option>`).join('');
-
         new bootstrap.Modal(document.getElementById('modalKhoaHoc')).show();
     }
 };
 
 window.editKhoaHoc = async function(maKhoa) {
-    const { data } = await supabase.from('Khoahoc').select('*').eq('MaKhoa', maKhoa).single();
-    if(data) {
+    const { data } = await supabase.rpc('get_khoahoc', { p_token: currentToken });
+    const kh = data.data.find(k => k.MaKhoa === maKhoa);
+    if(kh) {
         appKhoaHoc.showModal();
         document.getElementById('kh_mode').value = 'edit';
-        document.getElementById('kh_MaKhoa').value = data.MaKhoa;
+        document.getElementById('kh_MaKhoa').value = kh.MaKhoa;
         document.getElementById('kh_MaKhoa').readOnly = true;
-        document.getElementById('kh_TenKhoa').value = data.TenKhoa;
-        document.getElementById('kh_MaNghe').value = data.MaNghe;
-        document.getElementById('kh_GVCN').value = data.GVCN_Email || '';
-        document.getElementById('kh_TrangThai').value = data.TrangThai;
-        document.getElementById('kh_DiaDiem').value = data.DiaDiemDaoTao || '';
-        document.getElementById('kh_TuNgay').value = data.TuNgay || '';
-        document.getElementById('kh_DenNgay').value = data.DenNgay || '';
+        document.getElementById('kh_TenKhoa').value = kh.TenKhoa;
+        document.getElementById('kh_MaNghe').value = kh.MaNghe;
+        document.getElementById('kh_GVCN').value = kh.GVCN_Email || '';
+        document.getElementById('kh_TrangThai').value = kh.TrangThai;
+        document.getElementById('kh_DiaDiem').value = kh.DiaDiemDaoTao || '';
+        document.getElementById('kh_TuNgay').value = kh.TuNgay || '';
+        document.getElementById('kh_DenNgay').value = kh.DenNgay || '';
     }
 }
 
 window.deleteKhoaHoc = async function(maKhoa) {
     if(confirm('Chắc chắn xóa khóa học này và tất cả học viên thuộc khóa?')) {
-        const { data, error } = await supabase.rpc('admin_delete_khoahoc', { p_token: currentToken, p_makhoa: maKhoa });
-        if(error || !data.success) alert("Lỗi xóa: " + (error?.message || data?.message));
-        else { loadDsKhoaHoc(); loadDashboard(); }
+        const { data } = await supabase.rpc('admin_delete_khoahoc', { p_token: currentToken, p_makhoa: maKhoa });
+        if(!data.success) alert("Lỗi xóa: " + data.message); else { loadDsKhoaHoc(); loadDashboard(); }
     }
 }
 
@@ -322,67 +277,38 @@ async function saveKhoaHoc(e) {
         TuNgay: document.getElementById('kh_TuNgay').value || null,
         DenNgay: document.getElementById('kh_DenNgay').value || null
     };
-
-    const { data, error } = await supabase.rpc('admin_save_khoahoc', {
-        p_token: currentToken,
-        p_mode: document.getElementById('kh_mode').value,
-        p_data: dataObj
-    });
-
-    if(error || !data.success) alert("Lỗi: " + (error?.message || data?.message));
-    else {
-        bootstrap.Modal.getInstance(document.getElementById('modalKhoaHoc')).hide();
-        loadDsKhoaHoc(); loadDashboard();
-    }
+    const { data } = await supabase.rpc('admin_save_khoahoc', { p_token: currentToken, p_mode: document.getElementById('kh_mode').value, p_data: dataObj });
+    if(!data.success) alert("Lỗi: " + data.message);
+    else { bootstrap.Modal.getInstance(document.getElementById('modalKhoaHoc')).hide(); loadDsKhoaHoc(); loadDashboard(); }
 }
 
 // ---- MODULE: HỌC VIÊN ----
 async function initHocVienView() {
-    let query = supabase.from('Khoahoc').select('MaKhoa, TenKhoa').order('MaKhoa', {ascending: false});
-    if(currentUser.Role === 'Giáo viên') query = query.eq('GVCN_Email', currentUser.Username);
-
-    const { data } = await query;
+    const { data } = await supabase.rpc('get_khoahoc', { p_token: currentToken });
     const filter = document.getElementById('filterKhoaHoc_HV');
     filter.innerHTML = '<option value="">-- Tất cả các khóa --</option>';
-    data.forEach(k => {
-        filter.innerHTML += `<option value="${escapeHTML(k.MaKhoa)}">${escapeHTML(k.MaKhoa)} - ${escapeHTML(k.TenKhoa)}</option>`;
-    });
-
+    if(data && data.success) {
+        data.data.forEach(k => { filter.innerHTML += `<option value="${escapeHTML(k.MaKhoa)}">${escapeHTML(k.MaKhoa)} - ${escapeHTML(k.TenKhoa)}</option>`; });
+    }
     loadHocVien();
 }
 
 async function loadHocVien() {
     const maKhoa = document.getElementById('filterKhoaHoc_HV').value;
     const ttDuyet = document.getElementById('filterDuyet_HV').value;
-
     const tbody = document.getElementById('tblHocVien');
 
-    let query = supabase.from('Hocvien').select(`
-        *, DoiTuong(TenDoiTuong), Khoahoc!inner(MaKhoa, GVCN_Email)
-    `).order('MaHV', { ascending: true });
-
-    if(maKhoa) query = query.eq('MaKhoa', maKhoa);
-    if(ttDuyet) query = query.eq('TrangThaiDuyet', ttDuyet);
-
-    if(currentUser.Role === 'Giáo viên') {
-        query = query.eq('Khoahoc.GVCN_Email', currentUser.Username);
-    }
-
-    const { data, error } = await query;
-    if(error) { tbody.innerHTML = '<tr><td colspan="7">Lỗi</td></tr>'; return; }
+    const { data } = await supabase.rpc('get_hocvien', { p_token: currentToken, p_makhoa: maKhoa, p_ttduyet: ttDuyet });
+    if(!data || !data.success) { tbody.innerHTML = '<tr><td colspan="7">Lỗi</td></tr>'; return; }
 
     tbody.innerHTML = '';
-    data.forEach(h => {
+    data.data.forEach(h => {
         const btnDuyet = h.TrangThaiDuyet === 'Chờ duyệt' ? `<button class="btn btn-sm btn-warning" onclick="duyetHocVien('${escapeHTML(h.MaHV)}')">Duyệt</button>` : `<span class="badge bg-success">Đã duyệt</span>`;
-
         tbody.innerHTML += `
             <tr>
-                <td>${escapeHTML(h.MaHV)}</td>
-                <td class="fw-bold">${escapeHTML(h.HoTen)}</td>
-                <td>${escapeHTML(h.MaKhoa)}</td>
+                <td>${escapeHTML(h.MaHV)}</td><td class="fw-bold">${escapeHTML(h.HoTen)}</td><td>${escapeHTML(h.MaKhoa)}</td>
                 <td>${h.NgaySinh ? escapeHTML(new Date(h.NgaySinh).toLocaleDateString('vi-VN')) : ''}</td>
-                <td>${h.DoiTuong ? escapeHTML(h.DoiTuong.TenDoiTuong) : ''}</td>
-                <td>${btnDuyet}</td>
+                <td>${h.doituong ? escapeHTML(h.doituong.TenDoiTuong) : ''}</td><td>${btnDuyet}</td>
                 <td>
                     <button class="btn btn-sm btn-outline-success admin-only" onclick="editHocVien('${escapeHTML(h.MaHV)}')" title="Sửa"><i class="fas fa-edit"></i></button>
                     <button class="btn btn-sm btn-outline-danger admin-only" onclick="xoaHocVien('${escapeHTML(h.MaHV)}')" title="Xóa"><i class="fas fa-trash"></i></button>
@@ -397,31 +323,29 @@ window.appHocVien = {
     showModal: async function() {
         document.getElementById('frmSaveHocVien').reset();
         document.getElementById('hv_mode').value = 'add';
-
-        let query = supabase.from('Khoahoc').select('MaKhoa, TenKhoa').order('MaKhoa', {ascending: false});
-        const { data: khoas } = await query;
-        document.getElementById('hv_MaKhoa').innerHTML = khoas.map(k => `<option value="${escapeHTML(k.MaKhoa)}">${escapeHTML(k.MaKhoa)}</option>`).join('');
+        const { data } = await supabase.rpc('get_khoahoc', { p_token: currentToken });
+        document.getElementById('hv_MaKhoa').innerHTML = data.data.map(k => `<option value="${escapeHTML(k.MaKhoa)}">${escapeHTML(k.MaKhoa)}</option>`).join('');
         document.getElementById('hv_MaDoiTuong').innerHTML = '<option value="">Không</option>' + cachedDoiTuong.map(d => `<option value="${d.MaDoiTuong}">${escapeHTML(d.TenDoiTuong)}</option>`).join('');
-
         new bootstrap.Modal(document.getElementById('modalHocVien')).show();
     }
 };
 
 window.editHocVien = async function(maHv) {
-    const { data } = await supabase.from('Hocvien').select('*').eq('MaHV', maHv).single();
-    if(data) {
+    const { data } = await supabase.rpc('get_hocvien', { p_token: currentToken });
+    const hv = data.data.find(h => h.MaHV === maHv);
+    if(hv) {
         await appHocVien.showModal();
         document.getElementById('hv_mode').value = 'edit';
-        document.getElementById('hv_MaHV').value = data.MaHV;
-        document.getElementById('hv_MaKhoa').value = data.MaKhoa;
-        document.getElementById('hv_TrangThaiDuyet').value = data.TrangThaiDuyet;
-        document.getElementById('hv_HoTen').value = data.HoTen;
-        document.getElementById('hv_GioiTinh').value = data.GioiTinh || 'Nam';
-        document.getElementById('hv_Dienthoai').value = data.Dienthoai || '';
-        document.getElementById('hv_NgaySinh').value = data.NgaySinh || '';
-        document.getElementById('hv_SoCC').value = data.SoCC || '';
-        document.getElementById('hv_MaDoiTuong').value = data.MaDoiTuong || '';
-        document.getElementById('hv_ViecLam').value = data.ViecLamSauDaoTao || '';
+        document.getElementById('hv_MaHV').value = hv.MaHV;
+        document.getElementById('hv_MaKhoa').value = hv.MaKhoa;
+        document.getElementById('hv_TrangThaiDuyet').value = hv.TrangThaiDuyet;
+        document.getElementById('hv_HoTen').value = hv.HoTen;
+        document.getElementById('hv_GioiTinh').value = hv.GioiTinh || 'Nam';
+        document.getElementById('hv_Dienthoai').value = hv.Dienthoai || '';
+        document.getElementById('hv_NgaySinh').value = hv.NgaySinh || '';
+        document.getElementById('hv_SoCC').value = hv.SoCC || '';
+        document.getElementById('hv_MaDoiTuong').value = hv.MaDoiTuong || '';
+        document.getElementById('hv_ViecLam').value = hv.ViecLamSauDaoTao || '';
     }
 }
 
@@ -439,25 +363,13 @@ async function saveHocVien(e) {
         MaDoiTuong: document.getElementById('hv_MaDoiTuong').value ? parseInt(document.getElementById('hv_MaDoiTuong').value) : null,
         ViecLamSauDaoTao: document.getElementById('hv_ViecLam').value
     };
-
-    const { data, error } = await supabase.rpc('admin_save_hocvien', {
-        p_token: currentToken,
-        p_mode: document.getElementById('hv_mode').value,
-        p_data: dataObj
-    });
-
-    if(error || !data.success) alert("Lỗi: " + (error?.message || data?.message));
-    else {
-        bootstrap.Modal.getInstance(document.getElementById('modalHocVien')).hide();
-        loadHocVien(); loadDashboard();
-    }
+    const { data } = await supabase.rpc('admin_save_hocvien', { p_token: currentToken, p_mode: document.getElementById('hv_mode').value, p_data: dataObj });
+    if(!data.success) alert("Lỗi: " + data.message); else { bootstrap.Modal.getInstance(document.getElementById('modalHocVien')).hide(); loadHocVien(); loadDashboard(); }
 }
 
 window.duyetHocVien = async function(maHv) {
     if(confirm('Chấp nhận học viên này vào lớp chính thức?')) {
-        await supabase.rpc('admin_save_hocvien', {
-            p_token: currentToken, p_mode: 'edit', p_data: { MaHV: maHv, TrangThaiDuyet: 'Đã duyệt' }
-        });
+        await supabase.rpc('admin_save_hocvien', { p_token: currentToken, p_mode: 'edit', p_data: { MaHV: maHv, TrangThaiDuyet: 'Đã duyệt' } });
         loadHocVien(); loadDashboard();
     }
 }
@@ -471,39 +383,33 @@ window.xoaHocVien = async function(maHv) {
 
 // ---- MODULE: CHẤM ĐIỂM ----
 async function initDiemView() {
-    let query = supabase.from('Khoahoc').select('MaKhoa, TenKhoa, MaNghe, Nghedaotao(SoMoDun)').order('MaKhoa', {ascending: false});
-    if(currentUser.Role === 'Giáo viên') query = query.eq('GVCN_Email', currentUser.Username);
-    const { data } = await query;
+    const { data } = await supabase.rpc('get_khoahoc', { p_token: currentToken });
     const filter = document.getElementById('filterKhoaHoc_Diem');
     filter.innerHTML = '<option value="">-- Chọn Khóa Học --</option>';
-    data.forEach(k => {
-        const soMd = k.Nghedaotao ? k.Nghedaotao.SoMoDun : 1;
-        filter.innerHTML += `<option value="${escapeHTML(k.MaKhoa)}" data-somd="${soMd}">${escapeHTML(k.MaKhoa)} - ${escapeHTML(k.TenKhoa)}</option>`;
-    });
+    if(data && data.success) {
+        data.data.forEach(k => {
+            const soMd = k.nghedaotao ? k.nghedaotao.SoMoDun : 1;
+            filter.innerHTML += `<option value="${escapeHTML(k.MaKhoa)}" data-somd="${soMd}">${escapeHTML(k.MaKhoa)} - ${escapeHTML(k.TenKhoa)}</option>`;
+        });
+    }
 }
 
 async function loadBangDiem() {
     const filter = document.getElementById('filterKhoaHoc_Diem');
     const maKhoa = filter.value;
     const container = document.getElementById('diemContainer');
-
     if(!maKhoa) return;
 
     const soMd = parseInt(filter.options[filter.selectedIndex].getAttribute('data-somd')) || 5;
+    const { data } = await supabase.rpc('get_hocvien', { p_token: currentToken, p_makhoa: maKhoa, p_ttduyet: 'Đã duyệt' });
 
-    const { data: hocviens } = await supabase.from('Hocvien')
-        .select('MaHV, HoTen, DiemMD1, DiemMD2, DiemMD3, DiemMD4, DiemMD5, TongKet, XepLoai')
-        .eq('MaKhoa', maKhoa).eq('TrangThaiDuyet', 'Đã duyệt').order('MaHV', { ascending: true });
+    if(!data || !data.success) return;
+    const hocviens = data.data;
 
     let mdHeaders = '';
     for(let i=1; i<=soMd; i++) mdHeaders += `<th style="width: 80px;">MĐ ${i}</th>`;
 
-    let html = `
-        <table class="table table-bordered table-hover align-middle">
-            <thead class="table-light">
-                <tr><th>Mã HV</th><th>Họ Tên</th>${mdHeaders}<th>Tổng Kết</th><th>Xếp Loại</th><th>Lưu</th></tr>
-            </thead><tbody>
-    `;
+    let html = `<table class="table table-bordered table-hover align-middle"><thead class="table-light"><tr><th>Mã HV</th><th>Họ Tên</th>${mdHeaders}<th>Tổng Kết</th><th>Xếp Loại</th><th>Lưu</th></tr></thead><tbody>`;
 
     hocviens.forEach(h => {
         let mdInputs = '';
@@ -511,16 +417,8 @@ async function loadBangDiem() {
             const val = h[`DiemMD${i}`] || '';
             mdInputs += `<td><input type="number" class="form-control form-control-sm diem-input" data-hv="${escapeHTML(h.MaHV)}" data-md="${i}" step="0.1" min="0" max="10" value="${val}" onchange="tinhDiemRow('${escapeHTML(h.MaHV)}', ${soMd})"></td>`;
         }
-
         let rowClass = h.XepLoai === 'Không đạt' ? 'table-danger' : '';
-        html += `
-            <tr id="row_${escapeHTML(h.MaHV)}" class="${rowClass}">
-                <td>${escapeHTML(h.MaHV)}</td><td class="fw-bold">${escapeHTML(h.HoTen)}</td>${mdInputs}
-                <td><input type="text" class="form-control form-control-sm text-center fw-bold bg-light" id="tk_${escapeHTML(h.MaHV)}" value="${h.TongKet || ''}" readonly></td>
-                <td><span class="badge ${h.XepLoai==='Không đạt'?'bg-danger':'bg-success'}" id="xl_${escapeHTML(h.MaHV)}">${escapeHTML(h.XepLoai || '')}</span></td>
-                <td><button class="btn btn-sm btn-primary w-100" onclick="saveDiem('${escapeHTML(h.MaHV)}', ${soMd})"><i class="fas fa-save"></i></button></td>
-            </tr>
-        `;
+        html += `<tr id="row_${escapeHTML(h.MaHV)}" class="${rowClass}"><td>${escapeHTML(h.MaHV)}</td><td class="fw-bold">${escapeHTML(h.HoTen)}</td>${mdInputs}<td><input type="text" class="form-control form-control-sm text-center fw-bold bg-light" id="tk_${escapeHTML(h.MaHV)}" value="${h.TongKet || ''}" readonly></td><td><span class="badge ${h.XepLoai==='Không đạt'?'bg-danger':'bg-success'}" id="xl_${escapeHTML(h.MaHV)}">${escapeHTML(h.XepLoai || '')}</span></td><td><button class="btn btn-sm btn-primary w-100" onclick="saveDiem('${escapeHTML(h.MaHV)}', ${soMd})"><i class="fas fa-save"></i></button></td></tr>`;
     });
     html += '</tbody></table>';
     container.innerHTML = html;
@@ -543,9 +441,7 @@ window.tinhDiemRow = function(maHv, soMd) {
     if(count === soMd) {
         const tk = (tong / soMd).toFixed(1);
         txtTk.value = tk;
-        let xeploai = '';
-        row.classList.remove('table-danger');
-
+        let xeploai = ''; row.classList.remove('table-danger');
         if(coDiemLiet) { xeploai = 'Không đạt'; row.classList.add('table-danger'); badgeXl.className = 'badge bg-danger'; }
         else {
             const d = parseFloat(tk);
@@ -553,9 +449,7 @@ window.tinhDiemRow = function(maHv, soMd) {
             badgeXl.className = xeploai === 'Không đạt' ? 'badge bg-danger' : 'badge bg-success';
         }
         badgeXl.innerText = xeploai;
-    } else {
-        txtTk.value = ''; badgeXl.innerText = ''; row.classList.remove('table-danger');
-    }
+    } else { txtTk.value = ''; badgeXl.innerText = ''; row.classList.remove('table-danger'); }
 }
 
 window.saveDiem = async function(maHv, soMd) {
@@ -567,9 +461,8 @@ window.saveDiem = async function(maHv, soMd) {
     dataToSave.TongKet = document.getElementById(`tk_${maHv}`).value !== '' ? parseFloat(document.getElementById(`tk_${maHv}`).value) : null;
     dataToSave.XepLoai = document.getElementById(`xl_${maHv}`).innerText !== '' ? document.getElementById(`xl_${maHv}`).innerText : null;
 
-    const { error } = await supabase.rpc('admin_save_hocvien', { p_token: currentToken, p_mode: 'edit', p_data: dataToSave });
-
-    if(error) alert("Lỗi lưu điểm");
+    const { data } = await supabase.rpc('admin_save_hocvien', { p_token: currentToken, p_mode: 'edit', p_data: dataToSave });
+    if(!data.success) alert("Lỗi lưu điểm");
     else {
         const btn = document.querySelector(`#row_${maHv} .btn-primary`);
         btn.classList.replace('btn-primary', 'btn-success'); btn.innerHTML = '<i class="fas fa-check"></i>';
@@ -581,13 +474,9 @@ window.saveDiem = async function(maHv, soMd) {
 function loadDanhMuc() {
     const tbNghe = document.getElementById('tblNgheDaoTao');
     tbNghe.innerHTML = '';
-    cachedNghe.forEach(n => {
-        tbNghe.innerHTML += `<tr><td>${n.MaNghe}</td><td>${escapeHTML(n.TenNghe)}</td><td>${n.SoMoDun}</td></tr>`;
-    });
+    cachedNghe.forEach(n => { tbNghe.innerHTML += `<tr><td>${n.MaNghe}</td><td>${escapeHTML(n.TenNghe)}</td><td>${n.SoMoDun}</td></tr>`; });
 
     const tbDt = document.getElementById('tblDoiTuong');
     tbDt.innerHTML = '';
-    cachedDoiTuong.forEach(d => {
-        tbDt.innerHTML += `<tr><td>${d.MaDoiTuong}</td><td>${escapeHTML(d.TenDoiTuong)}</td></tr>`;
-    });
+    cachedDoiTuong.forEach(d => { tbDt.innerHTML += `<tr><td>${d.MaDoiTuong}</td><td>${escapeHTML(d.TenDoiTuong)}</td></tr>`; });
 }

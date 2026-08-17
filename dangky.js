@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
         await Promise.all([loadConfig(), loadKhoaHoc(), loadDoiTuong()]);
 
-        // Auto select MaKhoa if passed via URL parameter (e.g. from QR code: ?makhoa=K2026-001)
+        // Auto select MaKhoa if passed via URL parameter
         const urlParams = new URLSearchParams(window.location.search);
         const urlMaKhoa = urlParams.get('makhoa');
         if(urlMaKhoa) {
@@ -45,39 +45,33 @@ async function loadConfig() {
     }
 }
 
-// Load Active Courses
+// Load Active Courses using Public RPC
 async function loadKhoaHoc() {
-    // Lấy các khóa đang "Tuyển sinh"
-    const { data, error } = await supabase
-        .from('Khoahoc')
-        .select('MaKhoa, TenKhoa')
-        .eq('TrangThai', 'Tuyển sinh')
-        .order('MaKhoa', { ascending: false });
+    const { data, error } = await supabase.rpc('public_get_khoatuyensinh');
 
     if (error) throw error;
+    if (!data.success) throw new Error("Lỗi tải danh sách khóa học");
 
     cboMaKhoa.innerHTML = '<option value="">-- Chọn lớp đăng ký --</option>';
-    data.forEach(khoa => {
+    data.data.forEach(khoa => {
         const option = document.createElement('option');
-        option.value = khoa.MaKhoa;
-        option.textContent = `${khoa.TenKhoa} (${khoa.MaKhoa})`;
+        option.value = khoa.makhoa; // returned from row_to_json as lowercase keys usually or exact case
+        option.textContent = `${khoa.tenkhoa || khoa.TenKhoa} (${khoa.makhoa || khoa.MaKhoa})`;
         cboMaKhoa.appendChild(option);
     });
 }
 
-// Load Policy Targets
+// Load Policy Targets using Public RPC
 async function loadDoiTuong() {
-    const { data, error } = await supabase
-        .from('DoiTuong')
-        .select('MaDoiTuong, TenDoiTuong')
-        .order('MaDoiTuong', { ascending: true });
+    const { data, error } = await supabase.rpc('public_get_doituong');
 
     if (error) throw error;
+    if (!data.success) throw new Error("Lỗi tải danh sách đối tượng");
 
-    data.forEach(dt => {
+    data.data.forEach(dt => {
         const option = document.createElement('option');
-        option.value = dt.MaDoiTuong;
-        option.textContent = dt.TenDoiTuong;
+        option.value = dt.madoituong || dt.MaDoiTuong;
+        option.textContent = dt.tendoituong || dt.TenDoiTuong;
         cboMaDoiTuong.appendChild(option);
     });
 }
@@ -88,7 +82,6 @@ frmDangKy.addEventListener('submit', async (e) => {
     showLoader();
 
     try {
-        // Prepare Data for RPC
         const hocVienData = {
             MaKhoa: document.getElementById('MaKhoa').value,
             HoTen: document.getElementById('HoTen').value.toUpperCase(),
@@ -107,17 +100,13 @@ frmDangKy.addEventListener('submit', async (e) => {
             ViecLamSauDaoTao: document.getElementById('ViecLamDuKien').value
         };
 
-        // Call Secure RPC to handle registration and ID generation atomically
         const { data, error } = await supabase.rpc('register_hocvien', { p_data: hocVienData });
 
         if(error) throw error;
         if(!data.success) throw new Error(data.message || 'Lỗi không xác định');
 
-        // Success
         frmDangKy.reset();
         showAlert(`Đăng ký thành công! Mã hồ sơ của bạn là: <strong>${data.mahv}</strong>. Trung tâm sẽ liên hệ lại sớm nhất.`, 'success');
-
-        // Scroll to alert
         msgAlert.scrollIntoView({ behavior: 'smooth' });
 
     } catch (error) {

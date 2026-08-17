@@ -95,7 +95,7 @@ CREATE TABLE CauHinh (
 
 
 -- ==========================================
--- ROW LEVEL SECURITY (RLS) - FIX: READ ONLY FOR PUBLIC
+-- ROW LEVEL SECURITY (RLS) - FIX: DENY ALL DIRECT API ACCESS
 -- ==========================================
 ALTER TABLE Users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE UserSessions ENABLE ROW LEVEL SECURITY;
@@ -106,15 +106,9 @@ ALTER TABLE Hocvien ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ThongBao ENABLE ROW LEVEL SECURITY;
 ALTER TABLE CauHinh ENABLE ROW LEVEL SECURITY;
 
--- No Policies for Users and UserSessions (Deny All).
-CREATE POLICY "Public Select DoiTuong" ON DoiTuong FOR SELECT USING (true);
-CREATE POLICY "Public Select Nghedaotao" ON Nghedaotao FOR SELECT USING (true);
-CREATE POLICY "Public Select Khoahoc" ON Khoahoc FOR SELECT USING (true);
-CREATE POLICY "Public Select Hocvien" ON Hocvien FOR SELECT USING (true);
-CREATE POLICY "Public Select ThongBao" ON ThongBao FOR SELECT USING (true);
+-- Deny all direct API access for these tables. Access is only allowed via SECURITY DEFINER RPCs.
+-- The only exception is config, which is safe to read.
 CREATE POLICY "Public Select CauHinh" ON CauHinh FOR SELECT USING (true);
-
--- Cho phép form đăng ký insert public an toàn không cần RPC nếu muốn, nhưng vì ta dùng RPC `register_hocvien`, không cần policy INSERT.
 
 
 -- ==========================================
@@ -132,6 +126,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+
 -- Hàm RPC Đăng nhập bảo mật (V2) - Có trả về Session Token
 CREATE OR REPLACE FUNCTION login_user_v2(p_username VARCHAR, p_password VARCHAR)
 RETURNS json AS $$
@@ -142,17 +137,12 @@ DECLARE
 BEGIN
     SELECT * INTO v_user FROM Users WHERE Username = p_username;
 
-    IF NOT FOUND THEN
-        RETURN json_build_object('success', false, 'message', 'Tài khoản không tồn tại');
-    END IF;
-    IF v_user.TrangThai <> 'Hoạt động' THEN
-        RETURN json_build_object('success', false, 'message', 'Tài khoản đang bị khóa');
-    END IF;
+    IF NOT FOUND THEN RETURN json_build_object('success', false, 'message', 'Tài khoản không tồn tại'); END IF;
+    IF v_user.TrangThai <> 'Hoạt động' THEN RETURN json_build_object('success', false, 'message', 'Tài khoản đang bị khóa'); END IF;
 
     v_computed_hash := encode(digest(p_password || v_user.Salt, 'sha256'), 'hex');
 
     IF v_computed_hash = v_user.MatKhauHash THEN
-        -- Generate Token
         v_new_token := encode(gen_random_bytes(32), 'hex');
         INSERT INTO UserSessions (Token, Username, ExpiresAt) VALUES (v_new_token, v_user.Username, CURRENT_TIMESTAMP + INTERVAL '1 day');
 
@@ -167,10 +157,157 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
-CREATE OR REPLACE FUNCTION get_public_users()
-RETURNS TABLE (Username VARCHAR, HoTen VARCHAR, Role VARCHAR) AS $$
+
+-- ==== SECURE READ RPCS ====
+
+-- Admin & GV: Đọc danh sách khóa học
+CREATE OR REPLACE FUNCTION get_khoahoc(p_token TEXT)
+RETURNS json AS $$
+DECLARE
+    v_username VARCHAR;
+    v_role VARCHAR;
+    v_result json;
 BEGIN
-    RETURN QUERY SELECT u.Username, u.HoTen, u.Role FROM Users u;
+    v_username := verify_token(p_token);
+    IF v_username IS NULL THEN RETURN json_build_object('success', false, 'message', 'Unauthorized'); END IF;
+
+    SELECT Role INTO v_role FROM Users WHERE Username = v_username;
+
+    IF v_role = 'Giáo viên' THEN
+        SELECT json_agg(row_to_json(t)) INTO v_result FROM (
+            SELECT k.*, (SELECT row_to_json(n) FROM Nghedaotao n WHERE n.MaNghe = k.MaNghe) as Nghedaotao,
+                   (SELECT COALESCE(json_agg(row_to_json(h)), '[]') FROM Hocvien h WHERE h.MaKhoa = k.MaKhoa) as Hocvien
+            FROM Khoahoc k WHERE k.GVCN_Email = v_username ORDER BY k.MaKhoa DESC
+        ) t;
+    ELSE
+        SELECT json_agg(row_to_json(t)) INTO v_result FROM (
+            SELECT k.*, (SELECT row_to_json(n) FROM Nghedaotao n WHERE n.MaNghe = k.MaNghe) as Nghedaotao,
+                   (SELECT COALESCE(json_agg(row_to_json(h)), '[]') FROM Hocvien h WHERE h.MaKhoa = k.MaKhoa) as Hocvien
+            FROM Khoahoc k ORDER BY k.MaKhoa DESC
+        ) t;
+    END IF;
+
+    RETURN json_build_object('success', true, 'data', COALESCE(v_result, '[]'::json));
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+
+-- Admin & GV: Đọc danh sách học viên
+CREATE OR REPLACE FUNCTION get_hocvien(p_token TEXT, p_makhoa TEXT DEFAULT NULL, p_ttduyet TEXT DEFAULT NULL)
+RETURNS json AS $$
+DECLARE
+    v_username VARCHAR;
+    v_role VARCHAR;
+    v_result json;
+BEGIN
+    v_username := verify_token(p_token);
+    IF v_username IS NULL THEN RETURN json_build_object('success', false, 'message', 'Unauthorized'); END IF;
+
+    SELECT Role INTO v_role FROM Users WHERE Username = v_username;
+
+    SELECT json_agg(row_to_json(t)) INTO v_result FROM (
+        SELECT h.*,
+               (SELECT row_to_json(dt) FROM DoiTuong dt WHERE dt.MaDoiTuong = h.MaDoiTuong) as DoiTuong,
+               (SELECT row_to_json(k) FROM Khoahoc k WHERE k.MaKhoa = h.MaKhoa) as Khoahoc
+        FROM Hocvien h
+        WHERE
+            (p_makhoa = '' OR p_makhoa IS NULL OR h.MaKhoa = p_makhoa) AND
+            (p_ttduyet = '' OR p_ttduyet IS NULL OR h.TrangThaiDuyet = p_ttduyet) AND
+            (v_role <> 'Giáo viên' OR EXISTS (SELECT 1 FROM Khoahoc k2 WHERE k2.MaKhoa = h.MaKhoa AND k2.GVCN_Email = v_username))
+        ORDER BY h.MaHV ASC
+    ) t;
+
+    RETURN json_build_object('success', true, 'data', COALESCE(v_result, '[]'::json));
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+
+-- Thống kê Dashboard
+CREATE OR REPLACE FUNCTION get_dashboard_stats(p_token TEXT)
+RETURNS json AS $$
+DECLARE
+    v_username VARCHAR;
+    c_lop INT; c_hv INT; c_cho INT; c_tn INT;
+BEGIN
+    v_username := verify_token(p_token);
+    IF v_username IS NULL THEN RETURN json_build_object('success', false, 'message', 'Unauthorized'); END IF;
+
+    SELECT COUNT(*) INTO c_lop FROM Khoahoc;
+    SELECT COUNT(*) INTO c_hv FROM Hocvien WHERE TrangThaiDuyet = 'Đã duyệt';
+    SELECT COUNT(*) INTO c_cho FROM Hocvien WHERE TrangThaiDuyet = 'Chờ duyệt';
+    SELECT COUNT(*) INTO c_tn FROM Hocvien WHERE XepLoai IS NOT NULL AND XepLoai <> 'Không đạt';
+
+    RETURN json_build_object('success', true, 'data', json_build_object('cLop', c_lop, 'cHv', c_hv, 'cCho', c_cho, 'cTn', c_tn));
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Đọc Thông báo
+CREATE OR REPLACE FUNCTION get_thongbao(p_token TEXT)
+RETURNS json AS $$
+DECLARE
+    v_username VARCHAR;
+    v_role VARCHAR;
+    v_result json;
+BEGIN
+    v_username := verify_token(p_token);
+    IF v_username IS NULL THEN RETURN json_build_object('success', false, 'message', 'Unauthorized'); END IF;
+    SELECT Role INTO v_role FROM Users WHERE Username = v_username;
+
+    SELECT json_agg(row_to_json(t)) INTO v_result FROM (
+        SELECT * FROM ThongBao
+        WHERE v_role <> 'Giáo viên' OR NguoiNhan = v_username
+        ORDER BY ThoiGian DESC LIMIT 10
+    ) t;
+    RETURN json_build_object('success', true, 'data', COALESCE(v_result, '[]'::json));
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+
+-- Cache Data cho form
+CREATE OR REPLACE FUNCTION get_cache_data(p_token TEXT)
+RETURNS json AS $$
+DECLARE
+    v_username VARCHAR;
+    v_nghe json; v_dt json; v_users json;
+BEGIN
+    v_username := verify_token(p_token);
+    IF v_username IS NULL THEN RETURN json_build_object('success', false, 'message', 'Unauthorized'); END IF;
+
+    SELECT COALESCE(json_agg(row_to_json(n)), '[]') INTO v_nghe FROM Nghedaotao n;
+    SELECT COALESCE(json_agg(row_to_json(d)), '[]') INTO v_dt FROM DoiTuong d;
+    SELECT COALESCE(json_agg(row_to_json(u)), '[]') INTO v_users FROM (SELECT Username, HoTen, Role FROM Users) u;
+
+    RETURN json_build_object('success', true, 'data', json_build_object('Nghedaotao', v_nghe, 'DoiTuong', v_dt, 'Users', v_users));
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+
+
+-- ==== PUBLIC READ/WRITE (Dành cho Form Đăng Ký - Không cần Token) ====
+
+-- Lấy danh sách Khóa đang tuyển sinh (Ẩn hết PII GVCN)
+CREATE OR REPLACE FUNCTION public_get_khoatuyensinh()
+RETURNS json AS $$
+DECLARE
+    v_result json;
+BEGIN
+    SELECT COALESCE(json_agg(row_to_json(t)), '[]') INTO v_result FROM (
+        SELECT MaKhoa, TenKhoa FROM Khoahoc WHERE TrangThai = 'Tuyển sinh' ORDER BY MaKhoa DESC
+    ) t;
+    RETURN json_build_object('success', true, 'data', v_result);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Lấy danh sách Đối tượng
+CREATE OR REPLACE FUNCTION public_get_doituong()
+RETURNS json AS $$
+DECLARE
+    v_result json;
+BEGIN
+    SELECT COALESCE(json_agg(row_to_json(t)), '[]') INTO v_result FROM (
+        SELECT MaDoiTuong, TenDoiTuong FROM DoiTuong ORDER BY MaDoiTuong ASC
+    ) t;
+    RETURN json_build_object('success', true, 'data', v_result);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
@@ -214,9 +351,12 @@ CREATE OR REPLACE FUNCTION admin_save_khoahoc(p_token TEXT, p_mode TEXT, p_data 
 RETURNS json AS $$
 DECLARE
     v_user VARCHAR;
+    v_role VARCHAR;
 BEGIN
     v_user := verify_token(p_token);
     IF v_user IS NULL THEN RETURN json_build_object('success', false, 'message', 'Unauthorized'); END IF;
+    SELECT Role INTO v_role FROM Users WHERE Username = v_user;
+    IF v_role NOT IN ('Ban Giám đốc', 'Giáo vụ') THEN RETURN json_build_object('success', false, 'message', 'Forbidden'); END IF;
 
     IF p_mode = 'add' THEN
         INSERT INTO Khoahoc (MaKhoa, TenKhoa, MaNghe, GVCN_Email, TrangThai, DiaDiemDaoTao, TuNgay, DenNgay)
@@ -236,9 +376,12 @@ CREATE OR REPLACE FUNCTION admin_delete_khoahoc(p_token TEXT, p_makhoa TEXT)
 RETURNS json AS $$
 DECLARE
     v_user VARCHAR;
+    v_role VARCHAR;
 BEGIN
     v_user := verify_token(p_token);
     IF v_user IS NULL THEN RETURN json_build_object('success', false, 'message', 'Unauthorized'); END IF;
+    SELECT Role INTO v_role FROM Users WHERE Username = v_user;
+    IF v_role NOT IN ('Ban Giám đốc', 'Giáo vụ') THEN RETURN json_build_object('success', false, 'message', 'Forbidden'); END IF;
 
     DELETE FROM Khoahoc WHERE MaKhoa = p_makhoa;
     RETURN json_build_object('success', true);
@@ -250,11 +393,24 @@ CREATE OR REPLACE FUNCTION admin_save_hocvien(p_token TEXT, p_mode TEXT, p_data 
 RETURNS json AS $$
 DECLARE
     v_user VARCHAR;
+    v_role VARCHAR;
+    v_makhoa VARCHAR;
+    v_gvcn VARCHAR;
 BEGIN
     v_user := verify_token(p_token);
     IF v_user IS NULL THEN RETURN json_build_object('success', false, 'message', 'Unauthorized'); END IF;
 
+    SELECT Role INTO v_role FROM Users WHERE Username = v_user;
+
     IF p_mode = 'edit' THEN
+        -- RBAC for Teacher: Can only edit if they are GVCN of this course
+        SELECT MaKhoa INTO v_makhoa FROM Hocvien WHERE MaHV = p_data->>'MaHV';
+        SELECT GVCN_Email INTO v_gvcn FROM Khoahoc WHERE MaKhoa = v_makhoa;
+
+        IF v_role = 'Giáo viên' AND v_gvcn <> v_user THEN
+            RETURN json_build_object('success', false, 'message', 'Forbidden: Not your course');
+        END IF;
+
         UPDATE Hocvien SET
             HoTen = COALESCE(p_data->>'HoTen', HoTen),
             TrangThaiDuyet = COALESCE(p_data->>'TrangThaiDuyet', TrangThaiDuyet),
@@ -263,7 +419,6 @@ BEGIN
             SoCC = COALESCE(p_data->>'SoCC', SoCC),
             MaDoiTuong = CASE WHEN p_data->>'MaDoiTuong' IS NOT NULL THEN CAST(p_data->>'MaDoiTuong' AS INT) ELSE MaDoiTuong END,
             ViecLamSauDaoTao = COALESCE(p_data->>'ViecLamSauDaoTao', ViecLamSauDaoTao),
-            -- Grading fields
             DiemMD1 = CASE WHEN p_data ? 'DiemMD1' THEN CAST(p_data->>'DiemMD1' AS NUMERIC) ELSE DiemMD1 END,
             DiemMD2 = CASE WHEN p_data ? 'DiemMD2' THEN CAST(p_data->>'DiemMD2' AS NUMERIC) ELSE DiemMD2 END,
             DiemMD3 = CASE WHEN p_data ? 'DiemMD3' THEN CAST(p_data->>'DiemMD3' AS NUMERIC) ELSE DiemMD3 END,
@@ -282,9 +437,12 @@ CREATE OR REPLACE FUNCTION admin_delete_hocvien(p_token TEXT, p_mahv TEXT)
 RETURNS json AS $$
 DECLARE
     v_user VARCHAR;
+    v_role VARCHAR;
 BEGIN
     v_user := verify_token(p_token);
     IF v_user IS NULL THEN RETURN json_build_object('success', false, 'message', 'Unauthorized'); END IF;
+    SELECT Role INTO v_role FROM Users WHERE Username = v_user;
+    IF v_role NOT IN ('Ban Giám đốc', 'Giáo vụ') THEN RETURN json_build_object('success', false, 'message', 'Forbidden'); END IF;
 
     DELETE FROM Hocvien WHERE MaHV = p_mahv;
     RETURN json_build_object('success', true);
