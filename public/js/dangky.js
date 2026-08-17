@@ -80,11 +80,116 @@ async function loadDoiTuong() {
 }
 
 // Handle Form Submit
+
+// Stepper Logic
+let currentStep = 1;
+const totalSteps = 4;
+
+function updateStepper() {
+    // Update Indicators
+    document.querySelectorAll('.step-item').forEach(item => {
+        const step = parseInt(item.getAttribute('data-step'));
+        item.classList.remove('active', 'completed');
+        if (step === currentStep) item.classList.add('active');
+        if (step < currentStep) item.classList.add('completed');
+    });
+
+    // Update Content
+    document.querySelectorAll('.wizard-step-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    document.getElementById(`step-${currentStep}`).classList.add('active');
+    window.scrollTo(0, 0);
+}
+
+function validateCurrentStep() {
+    const currentSection = document.getElementById(`step-${currentStep}`);
+    const inputs = currentSection.querySelectorAll('input[required], select[required]');
+    const errorList = document.getElementById('errorList');
+    const errorSummary = document.getElementById('errorSummary');
+    let isValid = true;
+
+    errorList.innerHTML = '';
+
+    inputs.forEach(input => {
+        if (!input.checkValidity()) {
+            isValid = false;
+            input.classList.add('is-invalid');
+
+            // Get label text for error message
+            let labelText = 'Trường thông tin';
+            const label = document.querySelector(`label[for="${input.id}"]`);
+            if (label) labelText = label.textContent.replace('(*)', '').replace('*', '').trim();
+            else if (input.name === 'GioiTinh') labelText = 'Giới tính';
+
+            let errMsg = `Vui lòng nhập hợp lệ ${labelText}`;
+            if(input.validity.valueMissing) errMsg = `Không được để trống ${labelText}`;
+            if(input.validity.patternMismatch) errMsg = `${labelText} sai định dạng`;
+
+            errorList.innerHTML += `<li><a href="#${input.id || input.name}" class="text-danger">${errMsg}</a></li>`;
+
+            // Re-validate on input
+            input.addEventListener('input', function() {
+                if(this.checkValidity()) this.classList.remove('is-invalid');
+            }, { once: true });
+
+        } else {
+            input.classList.remove('is-invalid');
+        }
+    });
+
+    if(!isValid) {
+        errorSummary.classList.remove('d-none');
+    } else {
+        errorSummary.classList.add('d-none');
+    }
+
+    return isValid;
+}
+
+document.querySelectorAll('.btn-next').forEach(btn => {
+    btn.addEventListener('click', () => {
+        if (validateCurrentStep() && currentStep < totalSteps) {
+            currentStep++;
+            updateStepper();
+        }
+    });
+});
+
+document.querySelectorAll('.btn-prev').forEach(btn => {
+    btn.addEventListener('click', () => {
+        if (currentStep > 1) {
+            currentStep--;
+            updateStepper();
+        }
+    });
+});
+
+// Sync Checkbox
+document.getElementById('chkGiongHKTT').addEventListener('change', function() {
+    const noiCuTru = document.getElementById('NoiCuTru');
+    if(this.checked) {
+        noiCuTru.value = document.getElementById('HKTT').value;
+        noiCuTru.readOnly = true;
+        noiCuTru.classList.remove('is-invalid');
+    } else {
+        noiCuTru.value = '';
+        noiCuTru.readOnly = false;
+    }
+});
+
+// Update Submit Logic
 frmDangKy.addEventListener('submit', async (e) => {
     e.preventDefault();
-    showLoader();
+    if (!validateCurrentStep()) return;
+
+    const btnSubmit = document.getElementById('btnSubmitForm');
+    btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>ĐANG GỬI...';
+    btnSubmit.disabled = true;
+    document.getElementById('errorSummary').classList.add('d-none');
 
     try {
+
         const hocVienData = {
             MaKhoa: document.getElementById('MaKhoa').value,
             HoTen: document.getElementById('HoTen').value.toUpperCase(),
@@ -109,15 +214,18 @@ frmDangKy.addEventListener('submit', async (e) => {
         if(error) throw error;
         if(!data.success) throw new Error(data.message || 'Lỗi không xác định');
 
-        frmDangKy.reset();
-        showAlert(`Đăng ký thành công! Mã hồ sơ của bạn là: <strong>${data.mahv}</strong>. Trung tâm sẽ liên hệ lại sớm nhất.`, 'success');
-        msgAlert.scrollIntoView({ behavior: 'smooth' });
+        frmDangKy.classList.add('d-none');
+        document.getElementById('stepper').classList.add('d-none');
+        document.getElementById('successMaHV').innerText = data.mahv;
+        document.getElementById('successState').classList.remove('d-none');
 
     } catch (error) {
         console.error("Lỗi đăng ký:", error);
-        showAlert('Có lỗi xảy ra trong quá trình đăng ký: ' + error.message, 'danger');
+        document.getElementById('errorList').innerHTML = `<li>${error.message}</li>`;
+        document.getElementById('errorSummary').classList.remove('d-none');
     } finally {
-        hideLoader();
+        btnSubmit.innerHTML = '<i class="fas fa-paper-plane me-2"></i>GỬI HỒ SƠ';
+        btnSubmit.disabled = false;
     }
 });
 

@@ -85,9 +85,15 @@ async function handleLogin(e) {
     const u = document.getElementById('loginUsername').value;
     const p = document.getElementById('loginPassword').value;
     const alertBox = document.getElementById('loginAlert');
+    const alertMsg = document.getElementById('loginAlertMsg');
+    const btnSubmit = document.getElementById('btnLoginSubmit');
+
+    // Loading state
+    btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>ĐANG XỬ LÝ...';
+    btnSubmit.disabled = true;
+    alertBox.classList.add('d-none');
 
     try {
-        // Load dynamically initialized Supabase client
         const supabaseMod = await import('./supabase-client.js');
         const supabaseClient = supabaseMod.supabase;
 
@@ -98,12 +104,15 @@ async function handleLogin(e) {
             sessionStorage.setItem('token', data.token);
             window.location.reload();
         } else {
-            alertBox.innerText = data.message;
+            alertMsg.innerText = data.message;
             alertBox.classList.remove('d-none');
         }
     } catch (err) {
-        alertBox.innerText = "Lỗi kết nối hoặc sai thông tin!";
+        alertMsg.innerText = "Lỗi kết nối hoặc cấu hình mạng!";
         alertBox.classList.remove('d-none');
+    } finally {
+        btnSubmit.innerHTML = 'ĐĂNG NHẬP';
+        btnSubmit.disabled = false;
     }
 }
 
@@ -153,6 +162,26 @@ async function loadDashboard() {
         document.getElementById('stat-hvdanghoc').innerText = data.data.cHv || 0;
         document.getElementById('stat-choduyet').innerText = data.data.cCho || 0;
         document.getElementById('stat-totnghiep').innerText = data.data.cTn || 0;
+    }
+
+    // Tải danh sách hồ sơ mới cần duyệt
+    const res = await supabaseMod.supabase.rpc('get_hocvien', { p_token: currentToken, p_makhoa: null, p_ttduyet: 'Chờ duyệt' });
+    const tbody = document.getElementById('tblDashboardChoduyet');
+    if(res.data && res.data.success && res.data.data.length > 0) {
+        tbody.innerHTML = '';
+        // Chỉ lấy 5 hồ sơ mới nhất (dựa trên mảng trả về)
+        const pendingList = res.data.data.slice(0, 5);
+        pendingList.forEach(h => {
+            tbody.innerHTML += `
+                <tr>
+                    <td class="ps-4 fw-medium text-dark">${escapeHTML(h.HoTen)}</td>
+                    <td>${escapeHTML(h.MaKhoa)}</td>
+                    <td><span class="badge status-choduyet px-2 py-1"><i class="fas fa-clock me-1"></i>Chờ duyệt</span></td>
+                </tr>
+            `;
+        });
+    } else {
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-muted">Không có hồ sơ nào chờ duyệt.</td></tr>';
     }
 }
 
@@ -212,10 +241,10 @@ async function loadDsKhoaHoc() {
                 <td class="text-center fw-bold">${tongSo - choDuyet}</td>
                 <td class="text-center text-danger fw-bold">${choDuyet > 0 ? choDuyet : '-'}</td>
                 <td>
-                    <button class="btn btn-sm btn-outline-info action-btn" data-action="xem-hv" data-id="${escapeHTML(k.MaKhoa)}" title="Quản lý Học viên"><i class="fas fa-users"></i></button>
-                    <button class="btn btn-sm btn-outline-primary action-btn" data-action="qr" data-id="${escapeHTML(k.MaKhoa)}" data-name="${escapeHTML(k.TenKhoa)}" title="Mã QR"><i class="fas fa-qrcode"></i></button>
-                    <button class="btn btn-sm btn-outline-success admin-only action-btn" data-action="edit-kh" data-id="${escapeHTML(k.MaKhoa)}" title="Sửa"><i class="fas fa-edit"></i></button>
-                    <button class="btn btn-sm btn-outline-danger admin-only action-btn" data-action="del-kh" data-id="${escapeHTML(k.MaKhoa)}" title="Xóa"><i class="fas fa-trash"></i></button>
+                    <button class="btn btn-sm px-3 py-2 btn-outline-info action-btn" data-action="xem-hv" data-id="${escapeHTML(k.MaKhoa)}" title="Quản lý Học viên"><i class="fas fa-users"></i></button>
+                    <button class="btn btn-sm px-3 py-2 btn-outline-primary action-btn" data-action="qr" data-id="${escapeHTML(k.MaKhoa)}" data-name="${escapeHTML(k.TenKhoa)}" title="Mã QR"><i class="fas fa-qrcode"></i></button>
+                    <button class="btn btn-sm px-3 py-2 btn-outline-success admin-only action-btn" data-action="edit-kh" data-id="${escapeHTML(k.MaKhoa)}" title="Sửa"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-sm px-3 py-2 btn-outline-danger admin-only action-btn" data-action="del-kh" data-id="${escapeHTML(k.MaKhoa)}" title="Xóa"><i class="fas fa-trash"></i></button>
                 </td>
             </tr>
         `;
@@ -313,23 +342,59 @@ async function initHocVienView() {
 async function loadHocVien() {
     const maKhoa = document.getElementById('filterKhoaHoc_HV').value;
     const ttDuyet = document.getElementById('filterDuyet_HV').value;
+    const search = document.getElementById('search_HV')?.value.toLowerCase().trim() || '';
     const tbody = document.getElementById('tblHocVien');
 
     const supabaseMod = await import('./supabase-client.js');
     const { data } = await supabaseMod.supabase.rpc('get_hocvien', { p_token: currentToken, p_makhoa: maKhoa, p_ttduyet: ttDuyet });
-    if(!data || !data.success) { tbody.innerHTML = '<tr><td colspan="7">Lỗi</td></tr>'; return; }
+    if(!data || !data.success) { tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-danger">Lỗi tải dữ liệu</td></tr>'; return; }
+
+    let hocviens = data.data;
+    if(search) {
+        hocviens = hocviens.filter(h =>
+            (h.MaHV && h.MaHV.toLowerCase().includes(search)) ||
+            (h.HoTen && h.HoTen.toLowerCase().includes(search)) ||
+            (h.SoCC && h.SoCC.toLowerCase().includes(search))
+        );
+    }
+
+    if(hocviens.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-muted">Không tìm thấy hồ sơ phù hợp.</td></tr>';
+        return;
+    }
 
     tbody.innerHTML = '';
-    data.data.forEach(h => {
-        const btnDuyet = h.TrangThaiDuyet === 'Chờ duyệt' ? `<button class="btn btn-sm btn-warning action-btn" data-action="duyet-hv" data-id="${escapeHTML(h.MaHV)}">Duyệt</button>` : `<span class="badge bg-success">Đã duyệt</span>`;
+    hocviens.forEach(h => {
+        let badgeStatus = '';
+        if(h.TrangThaiDuyet === 'Chờ duyệt') badgeStatus = '<span class="badge status-choduyet"><i class="fas fa-clock me-1"></i>Chờ duyệt</span>';
+        else if(h.TrangThaiDuyet === 'Đã duyệt') badgeStatus = '<span class="badge status-daduyet"><i class="fas fa-check-circle me-1"></i>Đã duyệt</span>';
+        else badgeStatus = `<span class="badge bg-secondary">${escapeHTML(h.TrangThaiDuyet)}</span>`;
+
+        let dienThoai = h.Dienthoai ? h.Dienthoai.replace(/(\d{3})(\d{3})(\d{4})/, '$1 $2 ***') : 'Chưa có SĐT';
+
         tbody.innerHTML += `
             <tr>
-                <td>${escapeHTML(h.MaHV)}</td><td class="fw-bold">${escapeHTML(h.HoTen)}</td><td>${escapeHTML(h.MaKhoa)}</td>
-                <td>${h.NgaySinh ? escapeHTML(new Date(h.NgaySinh).toLocaleDateString('vi-VN')) : ''}</td>
-                <td>${h.DoiTuong ? escapeHTML(h.DoiTuong.TenDoiTuong) : ''}</td><td>${btnDuyet}</td>
+                <td class="ps-4">
+                    <span class="fw-bold text-primary">${escapeHTML(h.MaHV)}</span>
+                </td>
                 <td>
-                    <button class="btn btn-sm btn-outline-success admin-only action-btn" data-action="edit-hv" data-id="${escapeHTML(h.MaHV)}" title="Sửa"><i class="fas fa-edit"></i></button>
-                    <button class="btn btn-sm btn-outline-danger admin-only action-btn" data-action="del-hv" data-id="${escapeHTML(h.MaHV)}" title="Xóa"><i class="fas fa-trash"></i></button>
+                    <div class="fw-bold text-dark mb-1">${escapeHTML(h.HoTen)}</div>
+                    <div class="text-muted small">
+                        <i class="fas fa-id-card me-1"></i>${escapeHTML(h.SoCC || '---')} &bull;
+                        <i class="fas fa-phone me-1 ms-1"></i>${escapeHTML(dienThoai)}
+                    </div>
+                </td>
+                <td>
+                    <div class="mb-1"><span class="badge bg-light text-dark border"><i class="fas fa-layer-group text-muted me-1"></i>${escapeHTML(h.MaKhoa)}</span></div>
+                    <div class="text-muted small"><i class="fas fa-tag me-1"></i>${h.DoiTuong ? escapeHTML(h.DoiTuong.TenDoiTuong) : 'Không thuộc ĐTƯT'}</div>
+                </td>
+                <td>${badgeStatus}</td>
+                <td class="text-end pe-4">
+                    <div class="btn-group shadow-sm">
+                        <button class="btn btn-sm px-3 py-2 btn-light border action-btn text-primary" data-action="view-hv-detail" data-id="${escapeHTML(h.MaHV)}" title="Xem chi tiết"><i class="fas fa-eye"></i></button>
+                        <button class="btn btn-sm px-3 py-2 btn-light border action-btn text-success admin-only" data-action="edit-hv" data-id="${escapeHTML(h.MaHV)}" title="Sửa"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-sm px-3 py-2 btn-light border action-btn text-danger admin-only" data-action="del-hv" data-id="${escapeHTML(h.MaHV)}" title="Xóa"><i class="fas fa-trash"></i></button>
+                    </div>
                 </td>
             </tr>
         `;
@@ -422,7 +487,13 @@ async function loadBangDiem() {
     const filter = document.getElementById('filterKhoaHoc_Diem');
     const maKhoa = filter.value;
     const container = document.getElementById('diemContainer');
-    if(!maKhoa) return;
+    const actions = document.getElementById('diemActions');
+
+    if(!maKhoa) {
+        actions.classList.add('d-none');
+        container.innerHTML = '<div class="text-center py-5"><div class="bg-secondary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;"><i class="fas fa-table fa-2x text-muted"></i></div><h6 class="fw-bold text-dark">Chưa chọn lớp học</h6><p class="text-muted small">Vui lòng chọn một khóa học ở menu trên để bắt đầu nhập điểm</p></div>';
+        return;
+    }
 
     const soMd = parseInt(filter.options[filter.selectedIndex].getAttribute('data-somd')) || 5;
     const supabaseMod = await import('./supabase-client.js');
@@ -431,70 +502,72 @@ async function loadBangDiem() {
     if(!data || !data.success) return;
     const hocviens = data.data;
 
-    let mdHeaders = '';
-    for(let i=1; i<=soMd; i++) mdHeaders += `<th style="width: 80px;">MĐ ${i}</th>`;
+    if(hocviens.length === 0) {
+        actions.classList.add('d-none');
+        container.innerHTML = '<div class="text-center py-5"><p class="text-muted">Không có học viên nào đủ điều kiện nhập điểm (Chỉ hiển thị hồ sơ đã được duyệt).</p></div>';
+        return;
+    }
 
-    let html = `<table class="table table-bordered table-hover align-middle"><thead class="table-light"><tr><th>Mã HV</th><th>Họ Tên</th>${mdHeaders}<th>Tổng Kết</th><th>Xếp Loại</th><th>Lưu</th></tr></thead><tbody>`;
+    actions.classList.remove('d-none');
+    document.getElementById('diemStatus').innerHTML = '<i class="fas fa-info-circle me-1"></i>Sẵn sàng';
+    document.getElementById('diemStatus').className = 'text-muted small me-3';
+
+    let mdHeaders = '';
+    for(let i=1; i<=soMd; i++) mdHeaders += `<th style="width: 90px; text-align:center;">MĐ ${i}</th>`;
+
+    let html = `
+        <table class="table table-bordered table-hover align-middle mb-0 table-sticky-header">
+            <thead class="table-light">
+                <tr>
+                    <th style="width: 120px;">Mã HV</th>
+                    <th style="min-width: 200px;">Họ Tên</th>
+                    ${mdHeaders}
+                    <th style="width: 100px; text-align:center;">Tổng Kết</th>
+                    <th style="width: 120px; text-align:center;">Xếp Loại</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+    window.currentDiemData = {}; // Store states
 
     hocviens.forEach(h => {
         let mdInputs = '';
         for(let i=1; i<=soMd; i++) {
-            const val = h[`DiemMD${i}`] || '';
-            mdInputs += `<td><input type="number" class="form-control form-control-sm diem-input" data-hv="${escapeHTML(h.MaHV)}" data-md="${i}" step="0.1" min="0" max="10" value="${val}" onchange="tinhDiemRow('${escapeHTML(h.MaHV)}', ${soMd})"></td>`;
+            const val = h[`DiemMD${i}`] !== null ? h[`DiemMD${i}`] : '';
+            mdInputs += `<td><input type="number" class="form-control text-center diem-input" data-hv="${escapeHTML(h.MaHV)}" data-md="${i}" step="0.1" min="0" max="10" value="${val}"></td>`;
         }
         let rowClass = h.XepLoai === 'Không đạt' ? 'table-danger' : '';
-        html += `<tr id="row_${escapeHTML(h.MaHV)}" class="${rowClass}"><td>${escapeHTML(h.MaHV)}</td><td class="fw-bold">${escapeHTML(h.HoTen)}</td>${mdInputs}<td><input type="text" class="form-control form-control-sm text-center fw-bold bg-light" id="tk_${escapeHTML(h.MaHV)}" value="${h.TongKet || ''}" readonly></td><td><span class="badge ${h.XepLoai==='Không đạt'?'bg-danger':'bg-success'}" id="xl_${escapeHTML(h.MaHV)}">${escapeHTML(h.XepLoai || '')}</span></td><td><button class="btn btn-sm btn-primary w-100" onclick="saveDiem('${escapeHTML(h.MaHV)}', ${soMd})"><i class="fas fa-save"></i></button></td></tr>`;
+        html += `
+            <tr id="row_${escapeHTML(h.MaHV)}" class="${rowClass}">
+                <td class="fw-medium text-primary">${escapeHTML(h.MaHV)}</td>
+                <td class="fw-bold">${escapeHTML(h.HoTen)}</td>
+                ${mdInputs}
+                <td><input type="text" class="form-control text-center fw-bold bg-light" id="tk_${escapeHTML(h.MaHV)}" value="${h.TongKet !== null ? h.TongKet : ''}" readonly tabindex="-1"></td>
+                <td class="text-center"><span class="badge ${h.XepLoai==='Không đạt'?'status-error':'status-daduyet'}" id="xl_${escapeHTML(h.MaHV)}">${escapeHTML(h.XepLoai || '')}</span></td>
+            </tr>
+        `;
     });
     html += '</tbody></table>';
     container.innerHTML = html;
+    container.className = "p-0"; // remove padding for full width table
+
+    // Attach events for local validation and dirty state
+    document.querySelectorAll('.diem-input').forEach(input => {
+        input.addEventListener('input', function() {
+            const v = parseFloat(this.value);
+            if(this.value !== '' && (v < 0 || v > 10)) {
+                this.classList.add('is-invalid');
+            } else {
+                this.classList.remove('is-invalid');
+                document.getElementById('diemStatus').innerHTML = '<i class="fas fa-exclamation-circle me-1"></i>Có thay đổi chưa lưu';
+                document.getElementById('diemStatus').className = 'text-warning small me-3 fw-bold';
+            }
+        });
+    });
 }
 
-window.tinhDiemRow = function(maHv, soMd) {
-    let tong = 0, count = 0, coDiemLiet = false;
-    for(let i=1; i<=soMd; i++) {
-        const input = document.querySelector(`input[data-hv="${maHv}"][data-md="${i}"]`);
-        if(input && input.value !== '') {
-            const d = parseFloat(input.value);
-            tong += d; count++;
-            if(d < 5.0) coDiemLiet = true;
-        }
-    }
-    const txtTk = document.getElementById(`tk_${maHv}`);
-    const badgeXl = document.getElementById(`xl_${maHv}`);
-    const row = document.getElementById(`row_${maHv}`);
 
-    if(count === soMd) {
-        const tk = (tong / soMd).toFixed(1);
-        txtTk.value = tk;
-        let xeploai = ''; row.classList.remove('table-danger');
-        if(coDiemLiet) { xeploai = 'Không đạt'; row.classList.add('table-danger'); badgeXl.className = 'badge bg-danger'; }
-        else {
-            const d = parseFloat(tk);
-            if(d >= 9.0) xeploai = 'Xuất sắc'; else if(d >= 8.0) xeploai = 'Giỏi'; else if(d >= 7.0) xeploai = 'Khá'; else if(d >= 5.0) xeploai = 'Trung bình'; else xeploai = 'Không đạt';
-            badgeXl.className = xeploai === 'Không đạt' ? 'badge bg-danger' : 'badge bg-success';
-        }
-        badgeXl.innerText = xeploai;
-    } else { txtTk.value = ''; badgeXl.innerText = ''; row.classList.remove('table-danger'); }
-}
-
-window.saveDiem = async function(maHv, soMd) {
-    const dataToSave = { MaHV: maHv };
-    for(let i=1; i<=soMd; i++) {
-        const input = document.querySelector(`input[data-hv="${maHv}"][data-md="${i}"]`);
-        dataToSave[`DiemMD${i}`] = input.value !== '' ? parseFloat(input.value) : null;
-    }
-    dataToSave.TongKet = document.getElementById(`tk_${maHv}`).value !== '' ? parseFloat(document.getElementById(`tk_${maHv}`).value) : null;
-    dataToSave.XepLoai = document.getElementById(`xl_${maHv}`).innerText !== '' ? document.getElementById(`xl_${maHv}`).innerText : null;
-
-    const supabaseMod = await import('./supabase-client.js');
-    const { data } = await supabaseMod.supabase.rpc('admin_save_hocvien', { p_token: currentToken, p_mode: 'edit', p_data: dataToSave });
-    if(!data.success) alert("Lỗi lưu điểm");
-    else {
-        const btn = document.querySelector(`#row_${maHv} .btn-primary`);
-        btn.classList.replace('btn-primary', 'btn-success'); btn.innerHTML = '<i class="fas fa-check"></i>';
-        setTimeout(() => { btn.classList.replace('btn-success', 'btn-primary'); btn.innerHTML = '<i class="fas fa-save"></i>'; }, 1500);
-    }
-}
 
 // ---- DANH MỤC HỆ THỐNG ----
 function loadDanhMuc() {
@@ -565,7 +638,7 @@ async function loadUsers() {
 
     tbody.innerHTML = '';
     data.data.forEach(u => {
-        let badgeStatus = u.TrangThai === 'Hoạt động' ? 'bg-success' : 'bg-danger';
+        let badgeStatus = u.TrangThai === 'Hoạt động' ? 'status-daduyet' : 'status-error';
 
         let bruteHtml = '';
         if(u.LanDangNhapSai > 0) {
@@ -577,7 +650,7 @@ async function loadUsers() {
             bruteHtml = `<span class="badge bg-light text-muted">Bình thường</span>`;
         }
 
-        const btnToggle = `<button class="btn btn-sm btn-outline-${u.TrangThai === 'Hoạt động' ? 'danger' : 'success'} action-btn" data-action="toggle-user" data-id="${escapeHTML(u.Username)}" title="${u.TrangThai === 'Hoạt động' ? 'Khóa' : 'Mở khóa'}"><i class="fas fa-${u.TrangThai === 'Hoạt động' ? 'lock' : 'unlock'}"></i></button>`;
+        const btnToggle = `<button class="btn btn-sm px-3 py-2 btn-outline-${u.TrangThai === 'Hoạt động' ? 'danger' : 'success'} action-btn" data-action="toggle-user" data-id="${escapeHTML(u.Username)}" title="${u.TrangThai === 'Hoạt động' ? 'Khóa' : 'Mở khóa'}"><i class="fas fa-${u.TrangThai === 'Hoạt động' ? 'lock' : 'unlock'}"></i></button>`;
 
         tbody.innerHTML += `
             <tr>
@@ -655,3 +728,97 @@ document.addEventListener('click', function(e) {
 
     if(action === 'toggle-user') window.toggleUser(id);
 });
+
+// ---- TOGGLE PASSWORD VISIBILITY ----
+document.getElementById('btnTogglePass')?.addEventListener('click', function() {
+    const passInput = document.getElementById('loginPassword');
+    const icon = this.querySelector('i');
+    if(passInput.type === 'password') {
+        passInput.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    } else {
+        passInput.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    }
+});
+
+// ---- SIDEBAR TOGGLE (MOBILE) ----
+document.getElementById('btnToggleSidebar')?.addEventListener('click', function() {
+    document.getElementById('sidebar').classList.toggle('show');
+});
+
+// Hide sidebar when clicking outside on mobile
+document.addEventListener('click', function(e) {
+    const sidebar = document.getElementById('sidebar');
+    const toggleBtn = document.getElementById('btnToggleSidebar');
+    if(window.innerWidth < 992 && sidebar?.classList.contains('show') && !sidebar.contains(e.target) && !toggleBtn.contains(e.target)) {
+        sidebar.classList.remove('show');
+    }
+});
+
+// ---- SEARCH HOC VIEN ----
+document.getElementById('search_HV')?.addEventListener('keyup', function(e) {
+    if(e.key === 'Enter' || this.value === '' || this.value.length >= 3) {
+        // debounce search
+        clearTimeout(this.timer);
+        this.timer = setTimeout(() => {
+            loadHocVien();
+        }, 300);
+    }
+});
+
+window.saveAllDiem = async function() {
+    const filter = document.getElementById('filterKhoaHoc_Diem');
+    const maKhoa = filter.value;
+    const soMd = parseInt(filter.options[filter.selectedIndex].getAttribute('data-somd')) || 5;
+
+    // Validate
+    const invalidInputs = document.querySelectorAll('.diem-input.is-invalid');
+    if(invalidInputs.length > 0) {
+        alert("Có ô nhập điểm không hợp lệ (Phải từ 0 đến 10). Vui lòng sửa trước khi lưu.");
+        return;
+    }
+
+    const btnSave = document.getElementById('btnSaveAllDiem');
+    const status = document.getElementById('diemStatus');
+    btnSave.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>ĐANG LƯU...';
+    btnSave.disabled = true;
+
+    const supabaseMod = await import('./supabase-client.js');
+
+    // Gather all students
+    const rows = document.querySelectorAll('#diemContainer tbody tr');
+    let hasError = false;
+
+    for(let row of rows) {
+        const maHv = row.id.replace('row_', '');
+        const dataToSave = { MaHV: maHv };
+        for(let i=1; i<=soMd; i++) {
+            const input = row.querySelector(`input[data-md="${i}"]`);
+            if(input) {
+                dataToSave[`DiemMD${i}`] = input.value !== '' ? parseFloat(input.value) : null;
+            }
+        }
+
+        // We do NOT send TongKet or XepLoai, let backend handle it
+        const { data } = await supabaseMod.supabase.rpc('admin_save_hocvien', { p_token: currentToken, p_mode: 'edit', p_data: dataToSave });
+        if(!data.success) {
+            hasError = true;
+            console.error("Lỗi lưu điểm HV " + maHv, data.message);
+        }
+    }
+
+    if(hasError) {
+        alert("Đã xảy ra lỗi khi lưu một số học viên. Vui lòng kiểm tra lại.");
+    } else {
+        status.innerHTML = '<i class="fas fa-check-circle me-1"></i>Đã lưu thành công';
+        status.className = 'text-success small me-3 fw-bold';
+        // Reload to get server-calculated grades
+        setTimeout(() => loadBangDiem(), 500);
+    }
+
+    btnSave.innerHTML = '<i class="fas fa-save me-2"></i>Lưu Bảng Điểm';
+    btnSave.disabled = false;
+}
