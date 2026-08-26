@@ -1,60 +1,368 @@
 <script>
+  let ALL_DATA = {};
+  let currentCourseModal, currentPartnerModal, currentStaffModal, currentFacilityModal;
+  let threeAnimFrameId;
+
   document.addEventListener("DOMContentLoaded", function() {
-    // Khởi tạo thư viện AOS (Animate On Scroll)
-    AOS.init({
-      duration: 800,
-      easing: 'slide',
-      once: true, // Chỉ animate 1 lần khi cuộn xuống
-      offset: 50
-    });
+    checkRoute();
+    window.addEventListener("hashchange", checkRoute);
 
-    // Xử lý thanh điều hướng (Navbar) khi cuộn trang
-    var navbar = document.querySelector('.navbar');
-    window.addEventListener('scroll', function() {
-      if (window.scrollY > 50) {
-        navbar.classList.add('navbar-scrolled');
-      } else {
-        navbar.classList.remove('navbar-scrolled');
-      }
-    });
+    AOS.init({ duration: 800, easing: 'slide', once: true, offset: 50 });
 
-    // Xử lý cuộn trang mượt mà cho TẤT CẢ các anchor links (Navbar và nút bấm)
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    // Khởi tạo các Modal Admin
+    if(document.getElementById('courseModal')) currentCourseModal = new bootstrap.Modal(document.getElementById('courseModal'));
+    if(document.getElementById('partnerModal')) currentPartnerModal = new bootstrap.Modal(document.getElementById('partnerModal'));
+    if(document.getElementById('staffModal')) currentStaffModal = new bootstrap.Modal(document.getElementById('staffModal'));
+    if(document.getElementById('facilityModal')) currentFacilityModal = new bootstrap.Modal(document.getElementById('facilityModal'));
+
+    // Smooth Scroll cho Frontend
+    document.querySelectorAll('.scroll-link').forEach(anchor => {
       anchor.addEventListener('click', function (e) {
+        if(this.getAttribute('href') === '#admin') return;
         e.preventDefault();
-
-        // Đóng navbar collapse trên thiết bị di động sau khi click (nếu có)
-        var navbarCollapse = document.querySelector('.navbar-collapse');
-        if (navbarCollapse && navbarCollapse.classList.contains('show')) {
-          var bsCollapse = new bootstrap.Collapse(navbarCollapse, {toggle: false});
-          bsCollapse.hide();
-        }
-
         var targetId = this.getAttribute('href');
-        if (targetId === '#') return;
-
         var targetElement = document.querySelector(targetId);
         if (targetElement) {
-          // Lấy chiều cao của thanh navbar cố định để cuộn không bị che khuất
           var headerOffset = document.querySelector('.navbar').offsetHeight;
-          var elementPosition = targetElement.getBoundingClientRect().top;
-          var offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-
-          window.scrollTo({
-            top: offsetPosition,
-            behavior: "smooth"
-          });
+          window.scrollTo({ top: targetElement.offsetTop - headerOffset, behavior: "smooth" });
         }
       });
     });
+
+    var navbar = document.querySelector('.navbar');
+    if(navbar) {
+      window.addEventListener('scroll', function() {
+        if (window.scrollY > 50) navbar.classList.add('navbar-scrolled');
+        else navbar.classList.remove('navbar-scrolled');
+      });
+    }
   });
 
-  // Khởi tạo hiệu ứng nền 3D với Three.js
+  // ==========================================
+  // ROUTING & AUTH
+  // ==========================================
+  function checkRoute() {
+    let hash = window.location.hash;
+    if (hash === '#admin') {
+      document.getElementById('app-frontend').style.display = 'none';
+      document.getElementById('app-admin').style.display = 'block';
+      if (sessionStorage.getItem('adminPass')) {
+        document.getElementById('admin-login-screen').classList.add('d-none');
+        document.getElementById('admin-dashboard').classList.remove('d-none');
+        loadData(true);
+      } else {
+        document.getElementById('admin-login-screen').classList.remove('d-none');
+        document.getElementById('admin-dashboard').classList.add('d-none');
+        document.getElementById('loader').classList.add('d-none');
+      }
+    } else {
+      document.getElementById('app-admin').style.display = 'none';
+      document.getElementById('app-frontend').style.display = 'block';
+      loadData(false);
+    }
+  }
+
+  function handleLogin() {
+    let p = document.getElementById('admin-password').value;
+    google.script.run.withSuccessHandler(res => {
+      if(res) { sessionStorage.setItem('adminPass', p); checkRoute(); }
+      else document.getElementById('login-error').classList.remove('d-none');
+    }).loginAdmin(p);
+  }
+  function logoutAdmin() { sessionStorage.removeItem('adminPass'); checkRoute(); }
+
+  // ==========================================
+  // LOAD DATA
+  // ==========================================
+  function loadData(isAdmin) {
+    document.getElementById('loader').classList.remove('d-none');
+    google.script.run.withSuccessHandler(data => {
+      ALL_DATA = data;
+      isAdmin ? renderAdmin() : renderFrontend();
+      document.getElementById('loader').classList.add('d-none');
+      if(!isAdmin && typeof initThreeJSHero === 'function') initThreeJSHero();
+    }).getPublicData();
+  }
+
+  // ==========================================
+  // RENDER FRONTEND
+  // ==========================================
+  function renderFrontend() {
+    let c = ALL_DATA.config;
+    document.getElementById('nav-ten-trung-tam').innerText = c.TenTrungTam || '';
+    document.getElementById('footer-ten-trung-tam').innerText = c.TenTrungTam || '';
+    document.getElementById('footer-dia-chi').innerText = c.DiaChi || '';
+    document.getElementById('footer-sdt').innerText = c.SoDienThoai || '';
+    document.getElementById('footer-email').innerText = c.Email || '';
+    document.getElementById('f-TamNhin').innerText = c.TamNhin || '';
+    document.getElementById('f-SBMoTa').innerText = c.SBMoTa || '';
+
+    // Render Khóa Học
+    document.getElementById('course-list-container').innerHTML = ALL_DATA.courses.map((x, i) => `
+      <div class="col-lg-4 col-md-6 mb-4" data-aos="fade-up" data-aos-delay="${(i%3)*100}">
+        <div class="card course-card h-100" data-bs-toggle="modal" data-bs-target="#cmodal-${x.id}">
+          <div class="card-body text-center p-4">
+            <div class="course-icon-wrapper"><i class="fas ${x.icon}"></i></div>
+            <h4 class="card-title fw-bold text-dark">${x.tenNghe}</h4>
+            <div class="mb-3 mt-3">
+              <span class="badge bg-primary me-2"><i class="fas fa-layer-group me-1"></i>${x.trinhDo}</span>
+              <span class="badge bg-warning text-dark"><i class="fas fa-clock me-1"></i>${x.thoiGian}</span>
+            </div>
+            <hr>
+            <div class="text-start">
+              <p class="mb-2"><strong>Mã nghề:</strong> <span class="text-muted">${x.maNghe}</span></p>
+              <p class="mb-0"><strong>Chuẩn đầu ra:</strong> <span class="text-muted">${x.chuanDauRa}</span></p>
+            </div>
+            <button class="btn btn-outline-primary btn-sm w-100 mt-3">Xem Chi Tiết CĐR</button>
+          </div>
+        </div>
+      </div>
+    `).join('');
+
+    // Render Modals cho Khóa Học
+    document.getElementById('modals-container').innerHTML = ALL_DATA.courses.map(x => `
+      <div class="modal fade" id="cmodal-${x.id}" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+          <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+              <h5 class="modal-title"><i class="fas ${x.icon} me-2"></i>Nghề: ${x.tenNghe}</h5>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+               <h6 class="text-primary fw-bold"><i class="fas fa-brain me-2"></i>Chuẩn về Kiến thức</h6>
+               <p class="text-muted">${x.kienThuc || 'Đang cập nhật...'}</p>
+               <h6 class="text-primary fw-bold mt-4"><i class="fas fa-wrench me-2"></i>Chuẩn về Kỹ năng</h6>
+               <p class="text-muted">${x.kyNang || 'Đang cập nhật...'}</p>
+               <div class="alert alert-success mt-4">
+                 <h6 class="text-success fw-bold"><i class="fas fa-briefcase me-2"></i>Cơ hội việc làm</h6>
+                 <p class="mb-0">${x.viecLam || 'Đang cập nhật...'}</p>
+               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `).join('');
+
+    // Render Cơ Sở Vật Chất
+    if(ALL_DATA.facilities) {
+      document.getElementById('f-facilities').innerHTML = ALL_DATA.facilities.map((x, i) => `
+        <div class="col-md-4" data-aos="fade-up" data-aos-delay="${(i%3)*100}">
+          <img src="${x.imageUrl}" class="img-fluid facility-img w-100 shadow-sm rounded">
+          <h5 class="mt-3 text-center fw-bold">${x.ten}</h5>
+          <p class="text-center text-muted small">${x.moTa}</p>
+        </div>
+      `).join('');
+    }
+
+    // Render Nhân Sự
+    if(ALL_DATA.staff) {
+      document.getElementById('f-staff').innerHTML = ALL_DATA.staff.map(x => `
+        <div class="col-md-4 col-sm-6">
+          <div class="counter-box bg-white rounded shadow-sm m-2">
+            <i class="fas ${x.icon}"></i>
+            <div class="counter-number">${x.conSo}${x.donVi}</div>
+            <h5 class="text-muted mt-2">${x.tieuDe}</h5>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Render Đối Tác
+    if(ALL_DATA.partners) {
+      document.getElementById('f-partners').innerHTML = ALL_DATA.partners.map(x => `
+        <img src="${x.logoUrl}" alt="${x.ten}" class="partner-logo rounded shadow-sm" title="${x.ten}">
+      `).join('');
+    }
+  }
+
+
+  // ==========================================
+  // RENDER & XỬ LÝ ADMIN CMS
+  // ==========================================
+  function renderAdmin() {
+    let c = ALL_DATA.config;
+    ['TenTrungTam','SoDienThoai','DiaChi','Email','TamNhin','SBMoTa'].forEach(k => {
+      if(document.getElementById('cfg-'+k)) document.getElementById('cfg-'+k).value = c[k] || '';
+    });
+
+    document.getElementById('admin-course-list').innerHTML = ALL_DATA.courses.map(x => `
+      <tr>
+        <td class="fw-bold">${x.tenNghe}</td><td>${x.trinhDo}</td><td>${x.maNghe}</td>
+        <td>
+          <button class="btn btn-sm btn-info me-1" onclick="openCourseModal('${x.id}')"><i class="fas fa-edit"></i></button>
+          <button class="btn btn-sm btn-danger" onclick="deleteCourse('${x.id}')"><i class="fas fa-trash"></i></button>
+        </td>
+      </tr>
+    `).join('');
+
+    if(ALL_DATA.facilities) {
+      document.getElementById('admin-facility-list').innerHTML = ALL_DATA.facilities.map(x => `
+        <tr>
+          <td><img src="${x.imageUrl}" height="40" class="rounded"></td><td>${x.ten}</td>
+          <td>
+            <button class="btn btn-sm btn-info me-1" onclick="openFacilityModal('${x.id}')"><i class="fas fa-edit"></i></button>
+            <button class="btn btn-sm btn-danger" onclick="deleteFacility('${x.id}')"><i class="fas fa-trash"></i></button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    if(ALL_DATA.staff) {
+      document.getElementById('admin-staff-list').innerHTML = ALL_DATA.staff.map(x => `
+        <tr>
+          <td>${x.tieuDe}</td><td>${x.conSo}${x.donVi}</td><td><i class="fas ${x.icon}"></i></td>
+          <td>
+            <button class="btn btn-sm btn-info me-1" onclick="openStaffModal('${x.id}')"><i class="fas fa-edit"></i></button>
+            <button class="btn btn-sm btn-danger" onclick="deleteStaff('${x.id}')"><i class="fas fa-trash"></i></button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    if(ALL_DATA.partners) {
+      document.getElementById('admin-partner-list').innerHTML = ALL_DATA.partners.map(x => `
+        <tr>
+          <td><img src="${x.logoUrl}" height="40" class="rounded"></td><td>${x.ten}</td>
+          <td>
+            <button class="btn btn-sm btn-info me-1" onclick="openPartnerModal('${x.id}')"><i class="fas fa-edit"></i></button>
+            <button class="btn btn-sm btn-danger" onclick="deletePartner('${x.id}')"><i class="fas fa-trash"></i></button>
+          </td>
+        </tr>
+      `).join('');
+    }
+  }
+
+  function saveConfig() {
+    let cfg = {};
+    ['TenTrungTam','SoDienThoai','DiaChi','Email','TamNhin','SBMoTa'].forEach(k => cfg[k] = document.getElementById('cfg-'+k).value);
+    document.getElementById('loader').classList.remove('d-none');
+    google.script.run.withSuccessHandler(m => { alert(m); loadData(true); }).withFailureHandler(e => { alert(e); document.getElementById('loader').classList.add('d-none'); }).saveConfigAdmin(cfg, sessionStorage.getItem('adminPass'));
+  }
+
+  // Khóa Học
+  function openCourseModal(id) {
+    let o = ALL_DATA.courses.find(x => x.id == id) || {};
+    document.getElementById('course-id').value = o.id || '';
+    document.getElementById('course-tenNghe').value = o.tenNghe || '';
+    document.getElementById('course-trinhDo').value = o.trinhDo || 'Sơ cấp';
+    document.getElementById('course-thoiGian').value = o.thoiGian || '3 tháng';
+    document.getElementById('course-maNghe').value = o.maNghe || '';
+    document.getElementById('course-icon').value = o.icon || 'fa-book';
+    document.getElementById('course-chuanDauRa').value = o.chuanDauRa || '';
+    document.getElementById('course-kienThuc').value = o.kienThuc || '';
+    document.getElementById('course-kyNang').value = o.kyNang || '';
+    document.getElementById('course-viecLam').value = o.viecLam || '';
+    currentCourseModal.show();
+  }
+  function saveCourseData() {
+    let data = {
+      id: document.getElementById('course-id').value, tenNghe: document.getElementById('course-tenNghe').value,
+      trinhDo: document.getElementById('course-trinhDo').value, thoiGian: document.getElementById('course-thoiGian').value,
+      maNghe: document.getElementById('course-maNghe').value, icon: document.getElementById('course-icon').value,
+      chuanDauRa: document.getElementById('course-chuanDauRa').value, kienThuc: document.getElementById('course-kienThuc').value,
+      kyNang: document.getElementById('course-kyNang').value, viecLam: document.getElementById('course-viecLam').value
+    };
+    if(!data.tenNghe) return alert("Nhập tên nghề!");
+    document.getElementById('loader').classList.remove('d-none');
+    google.script.run.withSuccessHandler(m => { alert(m); currentCourseModal.hide(); loadData(true); }).withFailureHandler(e => { alert(e); document.getElementById('loader').classList.add('d-none'); }).saveCourse(data, sessionStorage.getItem('adminPass'));
+  }
+  function deleteCourse(id) {
+    if(confirm('Xóa mục này?')) {
+      document.getElementById('loader').classList.remove('d-none');
+      google.script.run.withSuccessHandler(m => { alert(m); loadData(true); }).withFailureHandler(e => { alert(e); document.getElementById('loader').classList.add('d-none'); }).deleteCourse(id, sessionStorage.getItem('adminPass'));
+    }
+  }
+
+  // Đối Tác
+  function openPartnerModal(id) {
+    let o = ALL_DATA.partners.find(x => x.id == id) || {};
+    document.getElementById('partner-id').value = o.id || '';
+    document.getElementById('partner-ten').value = o.ten || '';
+    document.getElementById('partner-url').value = o.logoUrl || '';
+    currentPartnerModal.show();
+  }
+  function savePartnerData() {
+    let data = { id: document.getElementById('partner-id').value, ten: document.getElementById('partner-ten').value, logoUrl: document.getElementById('partner-url').value };
+    document.getElementById('loader').classList.remove('d-none');
+    google.script.run.withSuccessHandler(m => { alert(m); currentPartnerModal.hide(); loadData(true); }).withFailureHandler(e => { alert(e); document.getElementById('loader').classList.add('d-none'); }).savePartner(data, sessionStorage.getItem('adminPass'));
+  }
+  function deletePartner(id) {
+    if(confirm('Xóa đối tác này?')) {
+      document.getElementById('loader').classList.remove('d-none');
+      google.script.run.withSuccessHandler(m => { alert(m); loadData(true); }).withFailureHandler(e => { alert(e); document.getElementById('loader').classList.add('d-none'); }).deletePartner(id, sessionStorage.getItem('adminPass'));
+    }
+  }
+
+  // Cơ Sở Vật Chất
+  function openFacilityModal(id) {
+    let o = ALL_DATA.facilities.find(x => x.id == id) || {};
+    document.getElementById('facility-id').value = o.id || '';
+    document.getElementById('facility-ten').value = o.ten || '';
+    document.getElementById('facility-moTa').value = o.moTa || '';
+    document.getElementById('facility-url').value = o.imageUrl || '';
+    currentFacilityModal.show();
+  }
+  function saveFacilityData() {
+    let data = { id: document.getElementById('facility-id').value, ten: document.getElementById('facility-ten').value, moTa: document.getElementById('facility-moTa').value, imageUrl: document.getElementById('facility-url').value };
+    document.getElementById('loader').classList.remove('d-none');
+    google.script.run.withSuccessHandler(m => { alert(m); currentFacilityModal.hide(); loadData(true); }).withFailureHandler(e => { alert(e); document.getElementById('loader').classList.add('d-none'); }).saveFacility(data, sessionStorage.getItem('adminPass'));
+  }
+  function deleteFacility(id) {
+    if(confirm('Xóa cơ sở vật chất này?')) {
+      document.getElementById('loader').classList.remove('d-none');
+      google.script.run.withSuccessHandler(m => { alert(m); loadData(true); }).withFailureHandler(e => { alert(e); document.getElementById('loader').classList.add('d-none'); }).deleteFacility(id, sessionStorage.getItem('adminPass'));
+    }
+  }
+
+  // Nhân Sự (Staff)
+  function openStaffModal(id) {
+    let o = ALL_DATA.staff.find(x => x.id == id) || {};
+    document.getElementById('staff-id').value = o.id || '';
+    document.getElementById('staff-tieuDe').value = o.tieuDe || '';
+    document.getElementById('staff-conSo').value = o.conSo || '';
+    document.getElementById('staff-donVi').value = o.donVi || '';
+    document.getElementById('staff-icon').value = o.icon || '';
+    currentStaffModal.show();
+  }
+  function saveStaffData() {
+    let data = { id: document.getElementById('staff-id').value, tieuDe: document.getElementById('staff-tieuDe').value, conSo: document.getElementById('staff-conSo').value, donVi: document.getElementById('staff-donVi').value, icon: document.getElementById('staff-icon').value };
+    document.getElementById('loader').classList.remove('d-none');
+    google.script.run.withSuccessHandler(m => { alert(m); currentStaffModal.hide(); loadData(true); }).withFailureHandler(e => { alert(e); document.getElementById('loader').classList.add('d-none'); }).saveStaff(data, sessionStorage.getItem('adminPass'));
+  }
+  function deleteStaff(id) {
+    if(confirm('Xóa nhân sự này?')) {
+      document.getElementById('loader').classList.remove('d-none');
+      google.script.run.withSuccessHandler(m => { alert(m); loadData(true); }).withFailureHandler(e => { alert(e); document.getElementById('loader').classList.add('d-none'); }).deleteStaff(id, sessionStorage.getItem('adminPass'));
+    }
+  }
+
+  // Đổi mật khẩu
+  function changePass() {
+    let oldP = document.getElementById('old-pass').value;
+    let newP = document.getElementById('new-pass').value;
+    if(!oldP || !newP) return alert('Nhập đủ mật khẩu!');
+
+    document.getElementById('loader').classList.remove('d-none');
+    google.script.run.withSuccessHandler(res => {
+      document.getElementById('loader').classList.add('d-none');
+      if(res) {
+        alert("Đổi mật khẩu thành công! Vui lòng đăng nhập lại.");
+        logoutAdmin();
+      } else {
+        alert("Mật khẩu hiện tại không đúng!");
+      }
+    }).changeAdminPassword(oldP, newP);
+  }
+
+  // ==========================================
+  // THREEJS 3D HERO (Phục hồi từ bản trước)
+  // ==========================================
   function initThreeJSHero() {
+    if(threeAnimFrameId) cancelAnimationFrame(threeAnimFrameId);
     var container = document.getElementById('hero-canvas-container');
     if (!container || typeof THREE === 'undefined') return;
+    container.innerHTML = '';
 
-    // Scene, Camera, Renderer
     var scene = new THREE.Scene();
     var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     var renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
@@ -63,41 +371,26 @@
     renderer.setPixelRatio(window.devicePixelRatio);
     container.appendChild(renderer.domElement);
 
-    // Tạo Mesh lưới (PlaneGeometry) dạng sóng
     var geometry = new THREE.PlaneGeometry(100, 100, 40, 40);
-    // Tính toán đỉnh ban đầu
     var count = geometry.attributes.position.count;
     for (var i = 0; i < count; i++) {
       var x = geometry.attributes.position.getX(i);
       var y = geometry.attributes.position.getY(i);
-      // Tạo đường cong nhẹ ban đầu
       geometry.attributes.position.setZ(i, Math.sin(x/5) * Math.cos(y/5) * 2);
     }
 
-    // Vật liệu dưới dạng điểm sáng (PointsMaterial) tạo hiệu ứng hạt/Glow
     var material = new THREE.PointsMaterial({
-      color: 0x0d6efd, // Màu xanh primary
-      size: 0.3,
-      transparent: true,
-      opacity: 0.8,
-      blending: THREE.AdditiveBlending // Hiệu ứng sáng (Bloom) khi các hạt chồng lên nhau
+      color: 0x0d6efd, size: 0.3, transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending
     });
 
     var particlesMesh = new THREE.Points(geometry, material);
-    // Xoay lưới nằm ngang
     particlesMesh.rotation.x = -Math.PI / 2 + 0.3;
     particlesMesh.position.y = -10;
     scene.add(particlesMesh);
 
-    camera.position.z = 25;
-    camera.position.y = 5;
+    camera.position.z = 25; camera.position.y = 5;
 
-    // Hiệu ứng Parallax theo chuột
-    var mouseX = 0;
-    var mouseY = 0;
-    var targetX = 0;
-    var targetY = 0;
-
+    var mouseX = 0, mouseY = 0;
     var windowHalfX = window.innerWidth / 2;
     var windowHalfY = window.innerHeight / 2;
 
@@ -106,47 +399,29 @@
       mouseY = (event.clientY - windowHalfY) * 0.05;
     });
 
-    // Resize window
     window.addEventListener('resize', function() {
-      windowHalfX = window.innerWidth / 2;
-      windowHalfY = window.innerHeight / 2;
+      windowHalfX = window.innerWidth / 2; windowHalfY = window.innerHeight / 2;
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
-    // Animation Loop
     var clock = new THREE.Clock();
-
     function animate() {
-      requestAnimationFrame(animate);
+      threeAnimFrameId = requestAnimationFrame(animate);
       var time = clock.getElapsedTime();
-
-      // Sóng nước nhấp nhô (Wave mesh)
       var positions = particlesMesh.geometry.attributes.position;
       for (var i = 0; i < count; i++) {
         var x = positions.getX(i);
         var y = positions.getY(i);
-        // Đường cong chuyển động sử dụng Sine/Cosine
-        var z = Math.sin(x/5 + time) * Math.cos(y/5 + time) * 2;
-        positions.setZ(i, z);
+        positions.setZ(i, Math.sin(x/5 + time) * Math.cos(y/5 + time) * 2);
       }
       positions.needsUpdate = true;
-
-      // Parallax Camera
-      targetX = mouseX * 0.1;
-      targetY = mouseY * 0.1;
-
-      camera.position.x += (targetX - camera.position.x) * 0.05;
-      camera.position.y += (-targetY - camera.position.y + 5) * 0.05;
+      camera.position.x += (mouseX * 0.1 - camera.position.x) * 0.05;
+      camera.position.y += (-mouseY * 0.1 - camera.position.y + 5) * 0.05;
       camera.lookAt(scene.position);
-
       renderer.render(scene, camera);
     }
-
     animate();
   }
-
-  // Khởi động Three.js khi tải xong trang
-  window.addEventListener('load', initThreeJSHero);
 </script>
