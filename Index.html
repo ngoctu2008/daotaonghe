@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hồ sơ năng lực đào tạo nghề</title>
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- FontAwesome -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <!-- AOS CSS -->
+  <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+
+  <?!= include('CSS'); ?>
+</head>
+<body data-bs-spy="scroll" data-bs-target="#mainNav" data-bs-root-margin="0px 0px -40%" data-bs-smooth-scroll="true" tabindex="0">
+
+  <!-- ============================================== -->
+  <!-- MÀN HÌNH CHỜ (LOADING) -->
+  <!-- ============================================== -->
+  <div id="loader" class="vh-100 d-flex justify-content-center align-items-center bg-white position-fixed w-100 top-0 start-0 z-3">
+      <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+          <span class="visually-hidden">Đang tải...</span>
+      </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- KHU VỰC FRONTEND (Dành cho Người dùng) -->
+  <!-- ============================================== -->
+  <div id="app-frontend" style="display: none;">
+
+    <!-- Navbar (Glassmorphism) -->
+    <nav id="mainNav" class="navbar navbar-expand-lg navbar-dark fixed-top transition-all">
+      <div class="container">
+        <a class="navbar-brand fw-bold" href="#page-top">
+          <i class="fas fa-graduation-cap me-2 text-warning"></i>
+          <span id="nav-ten-trung-tam">Đang tải...</span>
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarResponsive">
+          <i class="fas fa-bars"></i>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarResponsive">
+          <ul class="navbar-nav text-uppercase ms-auto py-4 py-lg-0">
+            <li class="nav-item"><a class="nav-link scroll-link" href="#gioi-thieu">Giới thiệu & Pháp lý</a></li>
+            <li class="nav-item"><a class="nav-link scroll-link" href="#dao-tao">Đào tạo</a></li>
+            <li class="nav-item"><a class="nav-link scroll-link" href="#co-so-vat-chat">Cơ sở vật chất</a></li>
+            <li class="nav-item"><a class="nav-link scroll-link" href="#nhan-su">Nhân sự & Đối tác</a></li>
+            <li class="nav-item ms-lg-3"><a class="btn btn-outline-light btn-sm mt-2 mt-lg-0 scroll-link" href="#admin"><i class="fas fa-user-shield me-1"></i> Admin</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Hero Section (ThreeJS 3D Bloom Parallax) -->
+    <header class="hero-section" id="page-top">
+      <div id="hero-canvas-container"></div>
+      <div class="hero-overlay"></div>
+      <div class="container position-relative z-1 h-100 d-flex align-items-center justify-content-center">
+        <div class="text-center text-white" data-aos="zoom-in" data-aos-duration="1000">
+          <h1 class="hero-title text-uppercase mb-3">Hồ sơ năng lực đào tạo nghề</h1>
+          <p class="fs-4 mb-5 fw-light fst-italic text-light opacity-75">"Nâng tầm kỹ năng - Kiến tạo tương lai"</p>
+          <a class="btn btn-primary btn-lg rounded-pill px-5 py-3 fw-bold scroll-link btn-hero" href="#dao-tao">
+            <i class="fas fa-book-open me-2"></i>Xem Chương Trình Đào Tạo
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <!-- Section 1: Giới thiệu & Pháp lý -->
+    <section id="gioi-thieu" class="py-5 bg-light-section">
+      <div class="container py-4">
+        <div class="row gx-5">
+          <div class="col-lg-6 mb-5 mb-lg-0" data-aos="fade-right">
+            <h2 class="section-title text-start mb-4">Tầm nhìn & Sứ mạng</h2>
+            <p class="lead text-muted" id="f-TamNhin">Đang tải...</p>
+            <p class="mb-4" id="f-SBMoTa"></p>
+          </div>
+          <div class="col-lg-6" data-aos="fade-left">
+            <h2 class="section-title text-start mb-4">Năng lực pháp lý</h2>
+            <ul class="list-unstyled feature-list" id="f-NangLucPhapLy">
+              <li><i class="fas fa-check-circle text-success me-3 fs-5"></i>Đang tải...</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 2: Chương trình đào tạo -->
+    <section id="dao-tao" class="py-5">
+      <div class="container py-4">
+        <div class="text-center mb-5" data-aos="fade-up">
+          <h2 class="section-title">Chương trình đào tạo</h2>
+          <p class="text-muted">Các nghề trọng điểm với thời gian học linh hoạt, sát thực tế.</p>
+        </div>
+
+        <div class="row g-4" id="course-list-container">
+          <!-- Các Card Khóa học Render bằng JS -->
+        </div>
+      </div>
+      <!-- Khu vực chứa các Modal Chi Tiết Khóa Học -->
+      <div id="modals-container"></div>
+    </section>
+
+    <!-- Section 3: Cơ sở vật chất & Công nghệ giáo dục -->
+    <section id="co-so-vat-chat" class="py-5 bg-light-section">
+      <div class="container py-4">
+        <div class="text-center mb-5" data-aos="fade-up">
+          <h2 class="section-title">Cơ sở vật chất & Công nghệ</h2>
+        </div>
+
+        <div class="row g-4 mb-5 justify-content-center" id="f-facilities">
+           <!-- Dynamic Facility Content -->
+        </div>
+
+        <!-- Khối 3D/WebAR -->
+        <div class="row mt-5 align-items-center bg-white rounded shadow p-4" data-aos="fade-up">
+          <div class="col-lg-6 mb-4 mb-lg-0">
+            <div class="tech-highlight-box h-100 m-0 text-start">
+              <h3 class="fw-bold mb-3 text-white"><i class="fas fa-cubes me-2"></i> Ứng dụng Bài giảng trực quan</h3>
+              <p class="fs-5 text-white">Tích hợp công nghệ <strong>3D/WebAR</strong> vào thực hành.</p>
+              <p class="text-white opacity-75">Học viên được tương tác trực tiếp với các mô hình máy móc, chi tiết cấu trúc (động cơ điện, chi tiết xây dựng, cấu trúc sinh học cây trồng...) trên không gian 3 chiều trước khi thao tác trên thiết bị thực tế.</p>
+              <p class="fst-italic mt-4 text-warning"><i class="fas fa-mouse-pointer"></i> (Hãy thử xoay và phóng to mô hình bên cạnh)</p>
+            </div>
+          </div>
+          <div class="col-lg-6">
+            <model-viewer src="https://modelviewer.dev/shared-assets/models/Astronaut.glb" auto-rotate camera-controls shadow-intensity="1"></model-viewer>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 4: Đội ngũ nhân sự & Quan hệ hợp tác -->
+    <section id="nhan-su" class="py-5 bg-white">
+      <div class="container py-4">
+        <!-- Đội ngũ nhân sự -->
+        <div class="row mb-5 justify-content-center" id="f-staff" data-aos="fade-up"></div>
+
+        <hr class="my-5 text-muted">
+
+        <!-- Đối tác & Cam kết việc làm -->
+        <div class="text-center" data-aos="fade-up">
+          <h3 class="fw-bold text-primary mb-4"><i class="fas fa-handshake me-2"></i> Quan hệ hợp tác doanh nghiệp</h3>
+          <p class="lead fw-bold text-success mb-4 text-uppercase border border-success d-inline-block px-4 py-2 rounded">
+            Cam kết việc làm 100% sau tốt nghiệp
+          </p>
+          <div class="partner-slider mt-4 d-flex justify-content-center flex-wrap gap-4" id="f-partners"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="pt-5 pb-3">
+      <div class="container">
+        <div class="row g-4">
+          <div class="col-lg-6 col-md-12">
+            <h5 class="text-uppercase mb-4" id="footer-ten-trung-tam">Đang tải...</h5>
+            <p class="text-muted">Đơn vị sự nghiệp công lập, chuyên đào tạo và cung ứng nguồn nhân lực chất lượng cao.</p>
+            <ul class="list-unstyled footer-contact mt-4">
+              <li class="mb-3"><i class="fas fa-map-marker-alt"></i> <strong id="footer-dia-chi"></strong></li>
+              <li class="mb-3"><i class="fas fa-phone-alt"></i> <strong id="footer-sdt"></strong></li>
+              <li class="mb-3"><i class="fas fa-envelope"></i> <strong id="footer-email"></strong></li>
+            </ul>
+          </div>
+
+          <div class="col-lg-6 col-md-12">
+            <h5 class="text-uppercase mb-4">Bản đồ vị trí</h5>
+            <div class="ratio ratio-16x9 rounded overflow-hidden shadow-sm">
+              <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3876.517377519965!2d107.8221876!3d14.6300431!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x316972007af1d0bf%3A0xa1936c6becc3cf0c!2zVGjhu4sgdHLhuqVuIMSQxINrIFTDtCwgxJDgYmsgVMO0LCBLb24gVHVt!5e0!3m2!1svi!2s!4v1700000000000!5m2!1svi!2s" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
+            </div>
+          </div>
+        </div>
+        <div class="text-center mt-5 pt-3 border-top border-secondary">
+          <p class="mb-0 text-muted">&copy; 2024 CMS Database Integrated.</p>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+
+  <!-- ============================================== -->
+  <!-- KHU VỰC ADMIN (Trang Quản Trị CMS) -->
+  <!-- ============================================== -->
+  <div id="app-admin" style="display: none; min-height: 100vh;">
+
+    <!-- Màn hình Đăng nhập -->
+    <div id="admin-login-screen" class="container d-flex justify-content-center align-items-center vh-100">
+      <div class="card admin-card p-2" style="width: 420px;">
+        <div class="card-body p-4">
+          <div class="text-center mb-4">
+            <div class="d-inline-flex align-items-center justify-content-center bg-primary text-white rounded-circle mb-3 shadow" style="width: 70px; height: 70px;">
+              <i class="fas fa-user-shield fa-2x"></i>
+            </div>
+            <h4 class="fw-bold">CMS Quản Trị</h4>
+            <p class="text-muted small">Đăng nhập để quản lý nội dung</p>
+          </div>
+          <div class="alert alert-danger d-none" id="login-error">Sai mật khẩu!</div>
+          <div class="mb-4">
+            <label class="form-label fw-semibold text-muted">Mật khẩu bảo mật</label>
+            <input type="password" id="admin-password" class="form-control form-control-lg bg-light border-0" placeholder="••••••••">
+          </div>
+          <button class="btn btn-primary w-100 btn-lg mb-3 rounded-pill fw-bold" onclick="handleLogin()">Đăng Nhập</button>
+          <div class="text-center">
+             <a href="#" onclick="window.location.hash=''; setTimeout(checkRoute, 100); return false;" class="text-decoration-none text-muted small"><i class="fas fa-arrow-left me-1"></i> Về trang chủ</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bảng điều khiển (Dashboard) -->
+    <div id="admin-dashboard" class="d-none">
+      <nav class="navbar navbar-dark bg-primary shadow-sm" style="padding: 10px 0;">
+        <div class="container-fluid px-4">
+          <span class="navbar-brand mb-0 h1 fw-bold"><i class="fas fa-cogs me-2"></i>CMS Management</span>
+          <div class="d-flex">
+            <button class="btn btn-light btn-sm text-primary fw-bold rounded-pill px-3" onclick="logoutAdmin()"><i class="fas fa-sign-out-alt me-1"></i> Đăng xuất</button>
+          </div>
+        </div>
+      </nav>
+
+      <div class="container-fluid py-5 px-4">
+        <div class="row g-4">
+          <div class="col-xl-2 col-lg-3 mb-4">
+            <div class="card admin-card">
+              <div class="card-body p-3 list-group list-group-flush" id="admin-tabs" role="tablist">
+                <a class="list-group-item list-group-item-action active" data-bs-toggle="list" href="#tab-config"><i class="fas fa-sliders-h me-2"></i> Giới Thiệu & Cấu Hình</a>
+                <a class="list-group-item list-group-item-action" data-bs-toggle="list" href="#tab-courses"><i class="fas fa-book me-2"></i> Khóa Học (CĐR)</a>
+                <a class="list-group-item list-group-item-action" data-bs-toggle="list" href="#tab-facilities"><i class="fas fa-building me-2"></i> Cơ Sở Vật Chất</a>
+                <a class="list-group-item list-group-item-action" data-bs-toggle="list" href="#tab-staff"><i class="fas fa-users me-2"></i> Nhân Sự</a>
+                <a class="list-group-item list-group-item-action" data-bs-toggle="list" href="#tab-partners"><i class="fas fa-handshake me-2"></i> Đối Tác</a>
+                <a class="list-group-item list-group-item-action" data-bs-toggle="list" href="#tab-password"><i class="fas fa-key me-2"></i> Đổi Mật Khẩu</a>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-xl-10 col-lg-9">
+            <div class="tab-content">
+
+              <!-- TAB 1: CẤU HÌNH -->
+              <div class="tab-pane fade show active" id="tab-config">
+                <div class="card admin-card p-4">
+                  <h5 class="mb-4 text-primary fw-bold border-bottom pb-3"><i class="fas fa-sliders-h me-2"></i> Thông tin chung website</h5>
+                  <div class="card-body p-0">
+                    <form id="form-config">
+                      <div class="row g-4">
+                        <div class="col-md-6"><label class="form-label fw-semibold text-muted small text-uppercase">Tên Trung Tâm</label><input type="text" class="form-control form-control-lg bg-light border-0" id="cfg-TenTrungTam"></div>
+                        <div class="col-md-6"><label class="form-label fw-semibold text-muted small text-uppercase">Điện thoại</label><input type="text" class="form-control form-control-lg bg-light border-0" id="cfg-SoDienThoai"></div>
+                        <div class="col-md-6"><label class="form-label fw-semibold text-muted small text-uppercase">Địa chỉ</label><input type="text" class="form-control form-control-lg bg-light border-0" id="cfg-DiaChi"></div>
+                        <div class="col-md-6"><label class="form-label fw-semibold text-muted small text-uppercase">Email</label><input type="text" class="form-control form-control-lg bg-light border-0" id="cfg-Email"></div>
+                        <div class="col-12"><label class="form-label fw-semibold text-muted small text-uppercase">Tầm nhìn & Sứ mạng</label><textarea class="form-control bg-light border-0" rows="4" id="cfg-TamNhin"></textarea></div>
+                        <div class="col-12"><label class="form-label fw-semibold text-muted small text-uppercase">Công nghệ nổi bật (SBMoTa)</label><textarea class="form-control bg-light border-0" rows="3" id="cfg-SBMoTa"></textarea></div>
+                        <div class="col-12"><label class="form-label fw-semibold text-muted small text-uppercase">Năng lực pháp lý (Mỗi dòng 1 ý)</label><textarea class="form-control bg-light border-0" rows="4" id="cfg-NangLucPhapLy" placeholder="VD: Quyết định thành lập số..."></textarea></div>
+                      </div>
+                      <div class="mt-4 text-end">
+                        <button type="button" class="btn btn-primary btn-lg rounded-pill px-5 fw-bold" onclick="saveConfig()"><i class="fas fa-save me-2"></i> Lưu Cấu Hình</button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+
+              <!-- TAB 2: COURSES -->
+              <div class="tab-pane fade" id="tab-courses">
+                <div class="card admin-card p-4">
+                  <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+                    <h5 class="mb-0 text-primary fw-bold"><i class="fas fa-book me-2"></i> Quản lý Khóa học</h5>
+                    <button class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" onclick="openCourseModal()"><i class="fas fa-plus me-1"></i> Thêm Mới</button>
+                  </div>
+                  <div class="card-body p-0">
+                    <div class="table-responsive">
+                      <table class="table table-hover align-middle mb-0 border-top">
+                        <thead class="bg-light text-muted small text-uppercase"><tr><th class="py-3">Tên Ngành</th><th class="py-3">Trình Độ</th><th class="py-3">Mã Nghề</th><th width="150" class="py-3 text-end">Hành động</th></tr></thead>
+                        <tbody id="admin-course-list"></tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- TAB 3: FACILITIES -->
+              <div class="tab-pane fade" id="tab-facilities">
+                <div class="card admin-card p-4">
+                  <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+                    <h5 class="mb-0 text-primary fw-bold"><i class="fas fa-building me-2"></i> Quản lý Cơ sở vật chất</h5>
+                    <button class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" onclick="openFacilityModal()"><i class="fas fa-plus me-1"></i> Thêm Mới</button>
+                  </div>
+                  <div class="card-body p-0">
+                    <div class="table-responsive">
+                      <table class="table table-hover align-middle mb-0 border-top">
+                        <thead class="bg-light text-muted small text-uppercase"><tr><th class="py-3">Hình ảnh</th><th class="py-3">Tên phòng/xưởng</th><th width="150" class="py-3 text-end">Hành động</th></tr></thead>
+                        <tbody id="admin-facility-list"></tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- TAB 4: STAFF -->
+              <div class="tab-pane fade" id="tab-staff">
+                <div class="card admin-card p-4">
+                  <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+                    <h5 class="mb-0 text-primary fw-bold"><i class="fas fa-users me-2"></i> Quản lý Nhân sự</h5>
+                    <button class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" onclick="openStaffModal()"><i class="fas fa-plus me-1"></i> Thêm Mới</button>
+                  </div>
+                  <div class="card-body p-0">
+                    <div class="table-responsive">
+                      <table class="table table-hover align-middle mb-0 border-top">
+                        <thead class="bg-light text-muted small text-uppercase"><tr><th class="py-3">Tiêu đề</th><th class="py-3">Con số</th><th class="py-3">Icon</th><th width="150" class="py-3 text-end">Hành động</th></tr></thead>
+                        <tbody id="admin-staff-list"></tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- TAB 5: PARTNERS -->
+              <div class="tab-pane fade" id="tab-partners">
+                <div class="card admin-card p-4">
+                  <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+                    <h5 class="mb-0 text-primary fw-bold"><i class="fas fa-handshake me-2"></i> Quản lý Đối tác</h5>
+                    <button class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" onclick="openPartnerModal()"><i class="fas fa-plus me-1"></i> Thêm Mới</button>
+                  </div>
+                  <div class="card-body p-0">
+                    <div class="table-responsive">
+                      <table class="table table-hover align-middle mb-0 border-top">
+                        <thead class="bg-light text-muted small text-uppercase"><tr><th class="py-3">Hình ảnh</th><th class="py-3">Tên Doanh Nghiệp</th><th width="150" class="py-3 text-end">Hành động</th></tr></thead>
+                        <tbody id="admin-partner-list"></tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- TAB 6: ĐỔI MẬT KHẨU -->
+              <div class="tab-pane fade" id="tab-password">
+                <div class="card admin-card p-4" style="max-width: 500px;">
+                  <h5 class="mb-4 text-primary fw-bold border-bottom pb-3"><i class="fas fa-shield-alt me-2"></i> Đổi Mật Khẩu Quản Trị</h5>
+                  <div class="card-body p-0">
+                    <form id="form-password">
+                      <div class="mb-4">
+                        <label class="form-label fw-semibold text-muted small text-uppercase">Mật khẩu hiện tại</label>
+                        <input type="password" class="form-control form-control-lg bg-light border-0" id="old-pass" required>
+                      </div>
+                      <div class="mb-4">
+                        <label class="form-label fw-semibold text-muted small text-uppercase">Mật khẩu mới</label>
+                        <input type="password" class="form-control form-control-lg bg-light border-0" id="new-pass" required>
+                      </div>
+                      <div class="text-end">
+                        <button type="button" class="btn btn-warning btn-lg rounded-pill px-5 fw-bold" onclick="changePass()"><i class="fas fa-key me-2"></i> Xác Nhận Đổi</button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL STAFF -->
+  <div class="modal fade" id="staffModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title">Nhân Sự</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="staff-id">
+          <div class="mb-3"><label class="form-label">Tiêu đề (VD: Cán bộ)</label><input type="text" class="form-control" id="staff-tieuDe" required></div>
+          <div class="row">
+             <div class="col-md-6 mb-3"><label class="form-label">Con số</label><input type="text" class="form-control" id="staff-conSo"></div>
+             <div class="col-md-6 mb-3"><label class="form-label">Đơn vị (%, người...)</label><input type="text" class="form-control" id="staff-donVi"></div>
+          </div>
+          <div class="mb-3"><label class="form-label">Icon (FontAwesome)</label><input type="text" class="form-control" id="staff-icon" placeholder="fa-users"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+          <button type="button" class="btn btn-primary" onclick="saveStaffData()">Lưu Lại</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL FACILITY -->
+  <div class="modal fade" id="facilityModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title">Cơ Sở Vật Chất</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="facility-id">
+          <div class="mb-3"><label class="form-label">Tên phòng/xưởng</label><input type="text" class="form-control" id="facility-ten" required></div>
+          <div class="mb-3"><label class="form-label">Mô tả ngắn</label><input type="text" class="form-control" id="facility-moTa"></div>
+          <div class="mb-3"><label class="form-label">Link ảnh (URL)</label><input type="text" class="form-control" id="facility-url"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+          <button type="button" class="btn btn-primary" onclick="saveFacilityData()">Lưu Lại</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- MODAL COURSES (Bao gồm Chuẩn Đầu Ra) -->
+  <div class="modal fade" id="courseModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title" id="courseModalTitle">Khóa Học</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="form-course">
+            <input type="hidden" id="course-id">
+            <div class="row">
+              <div class="col-md-6 mb-3"><label class="form-label">Tên Ngành/Nghề (*)</label><input type="text" class="form-control" id="course-tenNghe" required></div>
+              <div class="col-md-6 mb-3"><label class="form-label">Mã nghề</label><input type="text" class="form-control" id="course-maNghe"></div>
+              <div class="col-md-4 mb-3"><label class="form-label">Trình Độ</label><input type="text" class="form-control" id="course-trinhDo" placeholder="Sơ cấp..."></div>
+              <div class="col-md-4 mb-3"><label class="form-label">Thời gian</label><input type="text" class="form-control" id="course-thoiGian"></div>
+              <div class="col-md-4 mb-3"><label class="form-label">Icon (FontAwesome)</label><input type="text" class="form-control" id="course-icon" placeholder="fa-fire"></div>
+
+              <div class="col-12"><hr class="my-2"><h6 class="text-primary fw-bold mb-3">Nội dung Chương Trình</h6></div>
+              <div class="col-md-12 mb-3"><label class="form-label">Đối tượng tuyển sinh</label><input type="text" class="form-control" id="course-doiTuong" placeholder="VD: Từ 15 tuổi trở lên..."></div>
+              <div class="col-md-6 mb-3"><label class="form-label">Số giờ lý thuyết</label><input type="number" class="form-control" id="course-gioLyThuyet"></div>
+              <div class="col-md-6 mb-3"><label class="form-label">Số giờ thực hành</label><input type="number" class="form-control" id="course-gioThucHanh"></div>
+              <div class="col-md-12 mb-3"><label class="form-label">Nội dung đào tạo chính</label><textarea class="form-control" rows="3" id="course-noiDung" placeholder="Liệt kê nội dung..."></textarea></div>
+
+              <div class="col-12"><hr class="my-2"><h6 class="text-primary fw-bold mb-3">Thông tin Chuẩn Đầu Ra</h6></div>
+              <div class="col-md-12 mb-3"><label class="form-label">Chứng chỉ (Tóm tắt)</label><input type="text" class="form-control" id="course-chuanDauRa"></div>
+              <div class="col-md-12 mb-3"><label class="form-label">Về Kiến thức</label><textarea class="form-control" rows="2" id="course-kienThuc"></textarea></div>
+              <div class="col-md-12 mb-3"><label class="form-label">Về Kỹ năng</label><textarea class="form-control" rows="2" id="course-kyNang"></textarea></div>
+              <div class="col-md-12 mb-3"><label class="form-label">Cơ hội việc làm</label><textarea class="form-control" rows="2" id="course-viecLam"></textarea></div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+          <button type="button" class="btn btn-primary" onclick="saveCourseData()">Lưu Lại</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL PARTNERS -->
+  <div class="modal fade" id="partnerModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title" id="partnerModalTitle">Đối Tác</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="partner-id">
+          <div class="mb-3"><label class="form-label">Tên Doanh Nghiệp</label><input type="text" class="form-control" id="partner-ten" required></div>
+          <div class="mb-3"><label class="form-label">Link Logo (URL)</label><input type="text" class="form-control" id="partner-url"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+          <button type="button" class="btn btn-primary" onclick="savePartnerData()">Lưu Lại</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap & Libs -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
+
+  <?!= include('JS', { page: page }); ?>
+</body>
+</html>
