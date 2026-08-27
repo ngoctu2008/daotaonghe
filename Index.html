@@ -52,7 +52,7 @@
             <li class="nav-item"><a class="nav-link scroll-link" href="#dao-tao">Đào tạo</a></li>
             <li class="nav-item"><a class="nav-link scroll-link" href="#co-so-vat-chat">Cơ sở vật chất</a></li>
             <li class="nav-item"><a class="nav-link scroll-link" href="#nhan-su">Nhân sự & Đối tác</a></li>
-            <li class="nav-item ms-lg-3"><a class="btn btn-outline-light btn-sm mt-2 mt-lg-0" href="#admin"><i class="fas fa-user-shield me-1"></i> Admin</a></li>
+            <li class="nav-item ms-lg-3"><a class="btn btn-outline-light btn-sm mt-2 mt-lg-0 scroll-link" href="#admin"><i class="fas fa-user-shield me-1"></i> Admin</a></li>
           </ul>
         </div>
       </div>
@@ -209,7 +209,7 @@
           </div>
           <button class="btn btn-primary w-100 btn-lg mb-3 rounded-pill fw-bold" onclick="handleLogin()">Đăng Nhập</button>
           <div class="text-center">
-             <a href="#" onclick="window.location.hash=''; location.reload();" class="text-decoration-none text-muted small"><i class="fas fa-arrow-left me-1"></i> Về trang chủ</a>
+             <a href="#" onclick="window.location.hash=''; setTimeout(checkRoute, 100); return false;" class="text-decoration-none text-muted small"><i class="fas fa-arrow-left me-1"></i> Về trang chủ</a>
           </div>
         </div>
       </div>
@@ -476,6 +476,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
   <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
 
-  <?!= include('JS'); ?>
+  <?!= include('JS', { page: page }); ?>
 </body>
 </html>

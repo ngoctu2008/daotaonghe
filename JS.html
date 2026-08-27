@@ -18,7 +18,23 @@
     // Smooth Scroll cho Frontend
     document.querySelectorAll('.scroll-link').forEach(anchor => {
       anchor.addEventListener('click', function (e) {
-        if(this.getAttribute('href') === '#admin') return;
+        if(this.getAttribute('href') === '#admin') {
+          e.preventDefault();
+          try { window.location.hash = 'admin'; } catch(err) {} // Ignore sandbox hash errors
+          // Manually trigger the view change since hash might fail
+          document.getElementById('app-frontend').style.display = 'none';
+          document.getElementById('app-admin').style.display = 'block';
+          if (sessionStorage.getItem('adminPass')) {
+            document.getElementById('admin-login-screen').classList.add('d-none');
+            document.getElementById('admin-dashboard').classList.remove('d-none');
+            loadData(true);
+          } else {
+            document.getElementById('admin-login-screen').classList.remove('d-none');
+            document.getElementById('admin-dashboard').classList.add('d-none');
+            document.getElementById('loader').classList.add('d-none');
+          }
+          return;
+        }
         e.preventDefault();
         var targetId = this.getAttribute('href');
         var targetElement = document.querySelector(targetId);
@@ -43,7 +59,10 @@
   // ==========================================
   function checkRoute() {
     let hash = window.location.hash;
-    if (hash === '#admin') {
+    let page = 'home';
+    if (hash === '#admin' || '<?= page ?>' === 'admin') page = 'admin';
+
+    if (page === 'admin') {
       document.getElementById('app-frontend').style.display = 'none';
       document.getElementById('app-admin').style.display = 'block';
       if (sessionStorage.getItem('adminPass')) {
@@ -69,7 +88,12 @@
       else document.getElementById('login-error').classList.remove('d-none');
     }).loginAdmin(p);
   }
-  function logoutAdmin() { sessionStorage.removeItem('adminPass'); checkRoute(); }
+
+  function logoutAdmin() {
+    sessionStorage.removeItem('adminPass');
+    window.location.hash = '';
+    checkRoute();
+  }
 
   // ==========================================
   // LOAD DATA

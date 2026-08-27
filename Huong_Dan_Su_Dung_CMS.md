@@ -42,8 +42,9 @@ Trong màn hình soạn thảo, hãy tạo 4 file với tên tương ứng và c
 Bạn có thể chỉnh sửa mọi nội dung trên web mà không cần chạm vào code.
 
 ### 1. Đăng nhập trang Quản trị
-- Truy cập vào đường link Web App của bạn, sau đó thêm `#admin` vào cuối link.
-  *(Ví dụ: `https://script.google.com/macros/s/.../exec#admin`)*
+- **Cách 1:** Nhấn vào nút **"Admin"** ở góc phải thanh Menu trên cùng của trang chủ.
+- **Cách 2:** Truy cập vào đường link Web App của bạn, sau đó thêm `?page=admin` vào cuối link.
+  *(Ví dụ: `https://script.google.com/macros/s/.../exec?page=admin`)*
 - Nhập mật khẩu. **Mật khẩu mặc định lần đầu là: `admin123`**.
 - Sau khi vào, hãy vào Tab **Đổi Mật Khẩu** để thay mật khẩu mới an toàn hơn.
 
