@@ -20,15 +20,17 @@ function setupDatabase() {
     configSheet.appendRow(['Email', 'gdnngdtxdakha@gmail.com']);
     configSheet.appendRow(['TamNhin', 'Chúng tôi cam kết trở thành trung tâm đào tạo nghề hàng đầu khu vực, cung cấp nguồn nhân lực chất lượng cao.']);
     configSheet.appendRow(['SBMoTa', 'Điểm nhấn của chúng tôi là tiên phong ứng dụng công nghệ giáo dục (3D/AR, chuyển đổi số) vào quá trình đào tạo thực hành.']);
+    configSheet.appendRow(['NangLucPhapLy', 'Quyết định thành lập của UBND Tỉnh.\nGiấy phép hoạt động Giáo dục Nghề nghiệp do Sở LĐTB&XH cấp.\nĐạt chuẩn kiểm định chất lượng cơ sở giáo dục nghề nghiệp.']);
 
     // Tạo Sheet Khóa học
     var coursesSheet = ss.insertSheet('Courses');
-    coursesSheet.appendRow(['ID', 'TenNghe', 'TrinhDo', 'ThoiGian', 'Icon', 'ChuanDauRa', 'MaNghe', 'KienThuc', 'KyNang', 'ViecLam']);
+    coursesSheet.appendRow(['ID', 'TenNghe', 'TrinhDo', 'ThoiGian', 'Icon', 'ChuanDauRa', 'MaNghe', 'KienThuc', 'KyNang', 'ViecLam', 'DoiTuong', 'GioLyThuyet', 'GioThucHanh', 'NoiDung']);
     coursesSheet.appendRow([
       'C1', 'Hàn điện', 'Sơ cấp', '3 tháng', 'fa-fire', 'Chứng chỉ sơ cấp nghề', '5520150',
       'Nắm vững kiến thức cơ bản và nguyên lý của nghề. Hiểu rõ các biện pháp an toàn lao động.',
       'Thực hiện thành thạo các thao tác hàn cơ bản. Vận dụng kỹ năng vào thực tế sản xuất.',
-      'Làm việc tại các cơ sở, xưởng cơ khí địa phương.'
+      'Làm việc tại các cơ sở, xưởng cơ khí địa phương.',
+      'Từ 15 tuổi trở lên, sức khỏe phù hợp', '60', '240', '1. An toàn lao động\n2. Cắt gọt kim loại\n3. Hàn hồ quang tay'
     ]);
 
     // Sheet Cơ sở vật chất
@@ -114,7 +116,8 @@ function getPublicData() {
     if(crsData[i][0]) result.courses.push({
       id: crsData[i][0], tenNghe: crsData[i][1], trinhDo: crsData[i][2], thoiGian: crsData[i][3],
       icon: crsData[i][4], chuanDauRa: crsData[i][5], maNghe: crsData[i][6],
-      kienThuc: crsData[i][7], kyNang: crsData[i][8], viecLam: crsData[i][9]
+      kienThuc: crsData[i][7], kyNang: crsData[i][8], viecLam: crsData[i][9],
+      doiTuong: crsData[i][10], gioLyThuyet: crsData[i][11], gioThucHanh: crsData[i][12], noiDung: crsData[i][13]
     });
   }
 
@@ -172,12 +175,12 @@ function saveCourse(obj, pass) {
     var data = sheet.getDataRange().getValues();
     for (var i = 1; i < data.length; i++) {
       if (data[i][0] == obj.id) {
-        sheet.getRange(i + 1, 2, 1, 9).setValues([[obj.tenNghe, obj.trinhDo, obj.thoiGian, obj.icon, obj.chuanDauRa, obj.maNghe, obj.kienThuc, obj.kyNang, obj.viecLam]]);
+        sheet.getRange(i + 1, 2, 1, 13).setValues([[obj.tenNghe, obj.trinhDo, obj.thoiGian, obj.icon, obj.chuanDauRa, obj.maNghe, obj.kienThuc, obj.kyNang, obj.viecLam, obj.doiTuong, obj.gioLyThuyet, obj.gioThucHanh, obj.noiDung]]);
         return "Cập nhật khóa học thành công!";
       }
     }
   } else {
-    sheet.appendRow(['C' + new Date().getTime(), obj.tenNghe, obj.trinhDo, obj.thoiGian, obj.icon, obj.chuanDauRa, obj.maNghe, obj.kienThuc, obj.kyNang, obj.viecLam]);
+    sheet.appendRow(['C' + new Date().getTime(), obj.tenNghe, obj.trinhDo, obj.thoiGian, obj.icon, obj.chuanDauRa, obj.maNghe, obj.kienThuc, obj.kyNang, obj.viecLam, obj.doiTuong, obj.gioLyThuyet, obj.gioThucHanh, obj.noiDung]);
     return "Thêm khóa học thành công!";
   }
 }

@@ -84,10 +84,8 @@
           </div>
           <div class="col-lg-6" data-aos="fade-left">
             <h2 class="section-title text-start mb-4">Năng lực pháp lý</h2>
-            <ul class="list-unstyled feature-list">
-              <li><i class="fas fa-check-circle text-success me-3 fs-5"></i>Quyết định thành lập của UBND Tỉnh.</li>
-              <li><i class="fas fa-check-circle text-success me-3 fs-5"></i>Giấy phép hoạt động Giáo dục Nghề nghiệp do Sở LĐTB&XH cấp.</li>
-              <li><i class="fas fa-check-circle text-success me-3 fs-5"></i>Đạt chuẩn kiểm định chất lượng cơ sở giáo dục nghề nghiệp.</li>
+            <ul class="list-unstyled feature-list" id="f-NangLucPhapLy">
+              <li><i class="fas fa-check-circle text-success me-3 fs-5"></i>Đang tải...</li>
             </ul>
           </div>
         </div>
@@ -257,6 +255,7 @@
                         <div class="col-md-6"><label class="form-label fw-semibold text-muted small text-uppercase">Email</label><input type="text" class="form-control form-control-lg bg-light border-0" id="cfg-Email"></div>
                         <div class="col-12"><label class="form-label fw-semibold text-muted small text-uppercase">Tầm nhìn & Sứ mạng</label><textarea class="form-control bg-light border-0" rows="4" id="cfg-TamNhin"></textarea></div>
                         <div class="col-12"><label class="form-label fw-semibold text-muted small text-uppercase">Công nghệ nổi bật (SBMoTa)</label><textarea class="form-control bg-light border-0" rows="3" id="cfg-SBMoTa"></textarea></div>
+                        <div class="col-12"><label class="form-label fw-semibold text-muted small text-uppercase">Năng lực pháp lý (Mỗi dòng 1 ý)</label><textarea class="form-control bg-light border-0" rows="4" id="cfg-NangLucPhapLy" placeholder="VD: Quyết định thành lập số..."></textarea></div>
                       </div>
                       <div class="mt-4 text-end">
                         <button type="button" class="btn btn-primary btn-lg rounded-pill px-5 fw-bold" onclick="saveConfig()"><i class="fas fa-save me-2"></i> Lưu Cấu Hình</button>
@@ -432,6 +431,12 @@
               <div class="col-md-4 mb-3"><label class="form-label">Trình Độ</label><input type="text" class="form-control" id="course-trinhDo" placeholder="Sơ cấp..."></div>
               <div class="col-md-4 mb-3"><label class="form-label">Thời gian</label><input type="text" class="form-control" id="course-thoiGian"></div>
               <div class="col-md-4 mb-3"><label class="form-label">Icon (FontAwesome)</label><input type="text" class="form-control" id="course-icon" placeholder="fa-fire"></div>
+
+              <div class="col-12"><hr class="my-2"><h6 class="text-primary fw-bold mb-3">Nội dung Chương Trình</h6></div>
+              <div class="col-md-12 mb-3"><label class="form-label">Đối tượng tuyển sinh</label><input type="text" class="form-control" id="course-doiTuong" placeholder="VD: Từ 15 tuổi trở lên..."></div>
+              <div class="col-md-6 mb-3"><label class="form-label">Số giờ lý thuyết</label><input type="number" class="form-control" id="course-gioLyThuyet"></div>
+              <div class="col-md-6 mb-3"><label class="form-label">Số giờ thực hành</label><input type="number" class="form-control" id="course-gioThucHanh"></div>
+              <div class="col-md-12 mb-3"><label class="form-label">Nội dung đào tạo chính</label><textarea class="form-control" rows="3" id="course-noiDung" placeholder="Liệt kê nội dung..."></textarea></div>
 
               <div class="col-12"><hr class="my-2"><h6 class="text-primary fw-bold mb-3">Thông tin Chuẩn Đầu Ra</h6></div>
               <div class="col-md-12 mb-3"><label class="form-label">Chứng chỉ (Tóm tắt)</label><input type="text" class="form-control" id="course-chuanDauRa"></div>
