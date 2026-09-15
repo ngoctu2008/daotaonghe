@@ -1,0 +1,85 @@
+<style>
+  /* Cấu hình Font chữ */
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f8f9fa;
+    color: #333;
+    scroll-behavior: smooth;
+  }
+
+  /* Cải tiến Navigation (Glassmorphism) */
+  .glassmorphism-nav {
+    background: rgba(13, 110, 253, 0.95) !important;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .navbar-nav .nav-link {
+    color: rgba(255, 255, 255, 0.8) !important;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+  }
+
+  .navbar-nav .nav-link:hover,
+  .navbar-nav .nav-link.active {
+    color: #fff !important;
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+
+  /* Section Spacing cho Sticky Nav */
+  .section-offset {
+    scroll-margin-top: 80px;
+  }
+
+  /* Hero Section */
+  .hero-section {
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Soft Hover cho Card */
+  .soft-hover {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  .soft-hover:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 40px rgba(0,0,0,0.1) !important;
+  }
+
+  /* Card Custom (Bo góc) */
+  .rounded-4 {
+    border-radius: 1rem !important;
+  }
+
+  /* Bảng Custom */
+  .table-hover tbody tr {
+    transition: background-color 0.2s ease;
+  }
+
+  /* Nút Tùy chỉnh Admin Tabs */
+  .admin-tabs .nav-link {
+    color: #495057;
+    background-color: #e9ecef;
+    border: none;
+    transition: all 0.3s ease;
+  }
+  .admin-tabs .nav-link.active {
+    background-color: #0d6efd;
+    color: white;
+  }
+
+  /* Document Card (Public) */
+  .doc-card {
+    border-left: 4px solid #0d6efd;
+    transition: all 0.2s ease;
+  }
+  .doc-card:hover {
+    background-color: #f8f9fa;
+    border-left-width: 8px;
+  }
+</style>

@@ -1,0 +1,35 @@
+<!-- Modal Đăng nhập -->
+<div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content rounded-4 border-0 shadow">
+      <div class="modal-header border-bottom-0 pb-0">
+        <h5 class="modal-title fw-bold text-primary" id="loginModalLabel">Đăng nhập hệ thống Quản trị</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4">
+        <div class="text-center mb-4">
+          <i class="bi bi-shield-lock text-primary" style="font-size: 3rem;"></i>
+          <p class="text-muted mt-2">Dành cho Ban Giám đốc & Cán bộ Trung tâm</p>
+        </div>
+
+        <form id="loginForm">
+          <div class="form-floating mb-3">
+            <input type="text" class="form-control rounded-3" id="loginUsername" placeholder="Tên đăng nhập" required>
+            <label for="loginUsername">Tên đăng nhập</label>
+          </div>
+          <div class="form-floating mb-4">
+            <input type="password" class="form-control rounded-3" id="loginPassword" placeholder="Mật khẩu" required>
+            <label for="loginPassword">Mật khẩu</label>
+          </div>
+
+          <div id="loginAlert" class="alert alert-danger d-none py-2" role="alert"></div>
+
+          <button type="submit" class="btn btn-primary w-100 py-2 rounded-3 fw-bold" id="btnLoginSubmit">
+            <span class="spinner-border spinner-border-sm d-none me-2" id="loginSpinner" role="status" aria-hidden="true"></span>
+            Đăng nhập
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
