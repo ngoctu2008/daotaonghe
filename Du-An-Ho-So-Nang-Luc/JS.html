@@ -1,0 +1,618 @@
+<script>
+  // Khởi tạo hiệu ứng AOS (Animate on Scroll)
+  AOS.init({
+    duration: 800,
+    once: true
+  });
+
+  // Biến toàn cục
+  let isAdmin = false;
+  let adminToken = "";
+
+  // Khi trang tải xong
+  document.addEventListener("DOMContentLoaded", function() {
+    // 1. Tải dữ liệu Public
+    loadPublicHocPhi();
+    loadPublicTaiLieu();
+    loadPublicGiaoVien();
+    loadPublicCoSoVatChat();
+
+    // 2. Bắt sự kiện form đăng nhập
+    document.getElementById("loginForm").addEventListener("submit", handleLogin);
+
+    // 3. Đăng xuất
+    document.getElementById("btn-logout").addEventListener("click", handleLogout);
+
+    // 4. Tìm kiếm tài liệu public
+    document.getElementById("public-search-doc").addEventListener("input", function(e) {
+      let keyword = e.target.value.toLowerCase();
+      let cards = document.querySelectorAll('.doc-card-container');
+      cards.forEach(card => {
+        let text = card.textContent.toLowerCase();
+        card.style.display = text.includes(keyword) ? "" : "none";
+      });
+    });
+
+    // 5. Cấu hình Form Học phí
+    document.getElementById("form-hocphi").addEventListener("submit", submitHocPhi);
+
+    // 6. Cấu hình Form Upload PDF
+    document.getElementById("form-upload-pdf").addEventListener("submit", uploadPDF);
+  });
+
+  // ==========================================
+  // XỬ LÝ PUBLIC VIEW
+  // ==========================================
+
+  function loadPublicHocPhi() {
+    google.script.run.withSuccessHandler(function(res) {
+      if(res.success) {
+        renderHocPhiTable("public-hocphi-tbody", res.data, false);
+      } else {
+        document.getElementById("public-hocphi-tbody").innerHTML = `<tr><td colspan="6" class="text-danger text-center">Lỗi: ${res.message}</td></tr>`;
+      }
+    }).getPublicHocPhiData();
+  }
+
+  function loadPublicGiaoVien() {
+    google.script.run.withSuccessHandler(function(res) {
+      let container = document.getElementById("public-giaovien-list");
+      if(res.success && res.data.length > 0) {
+        container.innerHTML = "";
+        res.data.forEach(gv => {
+          let html = `
+            <div class="col-md-6 col-lg-3">
+              <div class="card h-100 shadow-sm border-0 text-center soft-hover p-3">
+                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 80px; height: 80px;">
+                  <i class="bi bi-person fs-1 text-secondary"></i>
+                </div>
+                <h5 class="fw-bold">${escapeHTML(gv[1])}</h5>
+                <p class="text-muted small mb-1">${escapeHTML(gv[2])}</p>
+                <span class="badge bg-primary rounded-pill">${escapeHTML(gv[3])}</span>
+              </div>
+            </div>
+          `;
+          container.innerHTML += html;
+        });
+      } else {
+        container.innerHTML = `<div class="col-12 text-center text-muted">Chưa có dữ liệu giáo viên.</div>`;
+      }
+    }).getGiaoVienData();
+  }
+
+  function loadPublicCoSoVatChat() {
+    google.script.run.withSuccessHandler(function(res) {
+      let tbody = document.getElementById("public-csvc-tbody");
+      if(res.success && res.data.length > 0) {
+        tbody.innerHTML = "";
+        res.data.forEach((cs, index) => {
+          let html = `
+            <tr>
+              <td>${index + 1}</td>
+              <td class="fw-bold text-primary">${escapeHTML(cs[1])}</td>
+              <td>${escapeHTML(cs[2])}</td>
+              <td><span class="badge bg-info">${escapeHTML(cs[3])}</span></td>
+              <td>${escapeHTML(cs[4])}</td>
+            </tr>
+          `;
+          tbody.innerHTML += html;
+        });
+      } else {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-3">Chưa có dữ liệu cơ sở vật chất.</td></tr>`;
+      }
+    }).getCoSoVatChatData();
+  }
+
+  function loadPublicTaiLieu() {
+    google.script.run.withSuccessHandler(function(res) {
+      let container = document.getElementById("public-doc-list");
+      if(res.success && res.data.length > 0) {
+        container.innerHTML = "";
+        res.data.forEach(doc => {
+          // Bảo vệ XSS cơ bản (thực tế nên dùng escapeHTML)
+          let ten = escapeHTML(doc.tenVanBan);
+          let sohieu = escapeHTML(doc.soHieu);
+          let loai = escapeHTML(doc.loaiTaiLieu);
+
+          let html = `
+            <div class="col-md-6 col-lg-4 doc-card-container">
+              <div class="card h-100 shadow-sm border-0 doc-card soft-hover">
+                <div class="card-body">
+                  <div class="d-flex justify-content-between mb-2">
+                    <span class="badge bg-secondary">${loai}</span>
+                    <small class="text-muted">${doc.ngayBanHanh}</small>
+                  </div>
+                  <h6 class="fw-bold mb-2 text-primary" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${ten}</h6>
+                  <p class="small text-muted mb-3"><i class="bi bi-hash me-1"></i>${sohieu}</p>
+                  <button class="btn btn-outline-primary btn-sm w-100 rounded-pill" onclick="openPDFViewer('${doc.driveId}', '${ten}')">
+                    <i class="bi bi-eye me-1"></i> Xem văn bản
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+          container.innerHTML += html;
+        });
+      } else {
+        container.innerHTML = `<div class="col-12 text-center text-muted">Không có tài liệu nào hiển thị.</div>`;
+      }
+    }).getPublicPDFList();
+  }
+
+  function openPDFViewer(driveId, title) {
+    document.getElementById("pdfModalTitle").innerHTML = `<i class="bi bi-file-earmark-pdf-fill me-2"></i>${title}`;
+    document.getElementById("pdf-loading").style.display = "block";
+
+    // Sử dụng endpoint preview của Google Drive
+    document.getElementById("pdfIframe").src = `https://drive.google.com/file/d/${driveId}/preview`;
+
+    let modal = new bootstrap.Modal(document.getElementById('pdfViewerModal'));
+    modal.show();
+  }
+
+  // Hàm bảo vệ XSS và xử lý lỗi cú pháp JS khi nhúng vào onclick attributes
+  function escapeHTML(str) {
+    if (!str) return '';
+    return str.toString()
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "\\'"); // Escapes single quotes for JS strings embedded in HTML attributes
+  }
+
+  // ==========================================
+  // XỬ LÝ ĐĂNG NHẬP / ĐĂNG XUẤT (SPA)
+  // ==========================================
+
+  function handleLogin(e) {
+    e.preventDefault();
+    let btn = document.getElementById("btnLoginSubmit");
+    let spinner = document.getElementById("loginSpinner");
+    let alertBox = document.getElementById("loginAlert");
+    let u = document.getElementById("loginUsername").value;
+    let p = document.getElementById("loginPassword").value;
+
+    btn.disabled = true;
+    spinner.classList.remove("d-none");
+    alertBox.classList.add("d-none");
+
+    google.script.run.withSuccessHandler(function(res) {
+      btn.disabled = false;
+      spinner.classList.add("d-none");
+
+      if(res.success) {
+        // Đăng nhập thành công -> Cập nhật SPA
+        isAdmin = true;
+        adminToken = res.token;
+
+        // Đóng modal
+        bootstrap.Modal.getInstance(document.getElementById('loginModal')).hide();
+
+        // Đổi header
+        document.getElementById("btn-login-modal").classList.add("d-none");
+        document.getElementById("admin-user-info").classList.remove("d-none");
+        document.getElementById("admin-fullname").innerText = res.fullname;
+
+        // Ẩn Public, Hiện Admin
+        document.getElementById("public-view-section").style.display = "none";
+        document.getElementById("admin-view-section").style.display = "block";
+
+        // Tải dữ liệu Admin
+        loadAdminData();
+
+      } else {
+        alertBox.innerText = res.message;
+        alertBox.classList.remove("d-none");
+      }
+    }).loginAdmin(u, p);
+  }
+
+  function handleLogout() {
+    isAdmin = false;
+    adminToken = "";
+
+    // Trở về giao diện Public
+    document.getElementById("btn-login-modal").classList.remove("d-none");
+    document.getElementById("admin-user-info").classList.add("d-none");
+
+    document.getElementById("public-view-section").style.display = "block";
+    document.getElementById("admin-view-section").style.display = "none";
+
+    // Tải lại public data cho chắc chắn
+    loadPublicHocPhi();
+    loadPublicTaiLieu();
+    loadPublicGiaoVien();
+    loadPublicCoSoVatChat();
+
+    // Reset form admin
+    document.getElementById("loginForm").reset();
+  }
+
+  // ==========================================
+  // XỬ LÝ ADMIN VIEW (CRUD)
+  // ==========================================
+
+  function loadAdminData() {
+    loadAdminHocPhi();
+    loadAdminTaiLieu();
+    loadAdminGiaoVien();
+    loadAdminCoSoVatChat();
+  }
+
+  // --- MODULE HỌC PHÍ ---
+  function loadAdminHocPhi() {
+    google.script.run.withSuccessHandler(function(res) {
+      if(res.success) {
+        renderHocPhiTable("admin-hocphi-tbody", res.data, true);
+      }
+    }).getPublicHocPhiData();
+  }
+
+  function renderHocPhiTable(tbodyId, data, isAdminTable) {
+    let tbody = document.getElementById(tbodyId);
+    tbody.innerHTML = "";
+
+    if(data.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="${isAdminTable ? 7 : 6}" class="text-center text-muted">Chưa có dữ liệu học phí.</td></tr>`;
+      return;
+    }
+
+    data.forEach((row, index) => {
+      let hp = {
+        id: row[0],
+        ten: row[1],
+        trinhdo: row[2],
+        tiet: row[3],
+        tien: row[4],
+        qd: row[5]
+      };
+
+      let html = `<tr>
+        <td>${isAdminTable ? hp.id : (index + 1)}</td>
+        <td class="fw-bold text-primary">${escapeHTML(hp.ten)}</td>
+        <td>${escapeHTML(hp.trinhdo)}</td>
+        <td>${hp.tiet}</td>
+        <td class="fw-bold text-danger">${Number(hp.tien).toLocaleString('vi-VN')}</td>
+        <td>${escapeHTML(hp.qd)}</td>`;
+
+      if(isAdminTable) {
+        html += `<td class="text-end pe-3">
+          <button class="btn btn-sm btn-outline-primary rounded-circle me-1" onclick="editHocPhi('${hp.id}', '${escapeHTML(hp.ten)}', '${escapeHTML(hp.trinhdo)}', ${hp.tiet}, ${hp.tien}, '${escapeHTML(hp.qd)}')"><i class="bi bi-pencil"></i></button>
+          <button class="btn btn-sm btn-outline-danger rounded-circle" onclick="deleteHocPhi('${hp.id}')"><i class="bi bi-trash"></i></button>
+        </td>`;
+      }
+
+      html += `</tr>`;
+      tbody.innerHTML += html;
+    });
+  }
+
+  function openHocPhiForm() {
+    document.getElementById("form-hocphi").reset();
+    document.getElementById("hp-id").value = "";
+    document.getElementById("hocphi-form-title").innerText = "Thêm Nghề / Học phí mới";
+    document.getElementById("hocphi-form-container").classList.remove("d-none");
+  }
+
+  function closeHocPhiForm() {
+    document.getElementById("hocphi-form-container").classList.add("d-none");
+  }
+
+  function editHocPhi(id, ten, trinhdo, tiet, tien, qd) {
+    document.getElementById("hp-id").value = id;
+    document.getElementById("hp-ten").value = ten;
+    document.getElementById("hp-trinhdo").value = trinhdo;
+    document.getElementById("hp-tiet").value = tiet;
+    document.getElementById("hp-tien").value = tien;
+    document.getElementById("hp-qd").value = qd;
+
+    document.getElementById("hocphi-form-title").innerText = "Sửa thông tin Học phí";
+    document.getElementById("hocphi-form-container").classList.remove("d-none");
+  }
+
+  function submitHocPhi(e) {
+    e.preventDefault();
+    let btn = document.getElementById("btn-save-hp");
+    let spinner = document.getElementById("hp-spinner");
+
+    btn.disabled = true;
+    spinner.classList.remove("d-none");
+
+    let id = document.getElementById("hp-id").value;
+    let ten = document.getElementById("hp-ten").value;
+    let trinhdo = document.getElementById("hp-trinhdo").value;
+    let tiet = document.getElementById("hp-tiet").value;
+    let tien = document.getElementById("hp-tien").value;
+    let qd = document.getElementById("hp-qd").value;
+
+    google.script.run.withSuccessHandler(function(res) {
+      btn.disabled = false;
+      spinner.classList.add("d-none");
+      if(res.success) {
+        alert(res.message);
+        closeHocPhiForm();
+        loadAdminHocPhi();
+      } else {
+        alert("Lỗi: " + res.message);
+      }
+    }).saveHocPhi(adminToken, id, ten, trinhdo, tiet, tien, qd);
+  }
+
+  function deleteHocPhi(id) {
+    if(confirm("Bạn có chắc chắn muốn xóa học phí này?")) {
+      google.script.run.withSuccessHandler(function(res) {
+        if(res.success) {
+          loadAdminHocPhi();
+        } else {
+          alert("Lỗi: " + res.message);
+        }
+      }).deleteHocPhi(adminToken, id);
+    }
+  }
+
+  // --- MODULE TÀI LIỆU PDF ---
+  function loadAdminTaiLieu() {
+    google.script.run.withSuccessHandler(function(res) {
+      if(res.success) {
+        let tbody = document.getElementById("admin-doc-tbody");
+        tbody.innerHTML = "";
+
+        if(res.data.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">Chưa có tài liệu nào.</td></tr>`;
+          return;
+        }
+
+        res.data.forEach(doc => {
+          let isHidden = doc.trangThai === "Ẩn";
+          let badgeClass = isHidden ? "bg-secondary" : "bg-success";
+
+          let btnHtml = isHidden
+            ? `<button class="btn btn-sm btn-outline-success" onclick="toggleDocStatus('${doc.id}', 'show')"><i class="bi bi-eye"></i> Hiện</button>`
+            : `<button class="btn btn-sm btn-outline-warning" onclick="toggleDocStatus('${doc.id}', 'hide')"><i class="bi bi-eye-slash"></i> Ẩn</button>`;
+
+          let html = `<tr class="${isHidden ? 'table-secondary' : ''}">
+            <td>
+              <div class="fw-bold text-primary">${escapeHTML(doc.tenVanBan)}</div>
+              <small class="text-muted">${escapeHTML(doc.soHieu)}</small>
+            </td>
+            <td>${escapeHTML(doc.loaiTaiLieu)}</td>
+            <td>${doc.ngayBanHanh}</td>
+            <td><span class="badge ${badgeClass}">${doc.trangThai}</span></td>
+            <td class="text-end pe-3">
+              <button class="btn btn-sm btn-outline-info me-1" onclick="window.open('https://drive.google.com/file/d/${doc.driveId}/view', '_blank')"><i class="bi bi-box-arrow-up-right"></i> Mở Drive</button>
+              ${btnHtml}
+            </td>
+          </tr>`;
+          tbody.innerHTML += html;
+        });
+      }
+    }).getAdminPDFList(adminToken);
+  }
+
+  function toggleDocStatus(id, action) {
+    if(action === 'hide') {
+      if(!confirm("Tài liệu này sẽ không hiển thị ở trang công khai nữa. Tiếp tục?")) return;
+      google.script.run.withSuccessHandler(res => {
+        if(res.success) loadAdminTaiLieu(); else alert(res.message);
+      }).hidePDFDocument(adminToken, id);
+    } else {
+      google.script.run.withSuccessHandler(res => {
+        if(res.success) loadAdminTaiLieu(); else alert(res.message);
+      }).showPDFDocument(adminToken, id);
+    }
+  }
+
+  function uploadPDF(e) {
+    e.preventDefault();
+    let btn = document.getElementById("btn-upload");
+    let spinner = document.getElementById("upload-spinner");
+    let msg = document.getElementById("upload-msg");
+
+    let fileInput = document.getElementById("pdf-file");
+    let file = fileInput.files[0];
+
+    if(!file) {
+      alert("Vui lòng chọn file PDF!"); return;
+    }
+
+    if(file.type !== "application/pdf") {
+      alert("Chỉ chấp nhận file định dạng PDF!"); return;
+    }
+
+    // Giới hạn kích thước file (Vd: 10MB)
+    if(file.size > 10 * 1024 * 1024) {
+      alert("File quá lớn. Vui lòng tải file dưới 10MB."); return;
+    }
+
+    btn.disabled = true;
+    spinner.classList.remove("d-none");
+    msg.className = "mt-3 text-center fw-bold text-primary";
+    msg.innerText = "Đang đọc tệp...";
+
+    let ten = document.getElementById("pdf-ten").value;
+    let sohieu = document.getElementById("pdf-sohieu").value;
+    let loai = document.getElementById("pdf-loai").value;
+
+    // Đọc file dưới dạng Base64 để gửi qua Google Apps Script
+    let reader = new FileReader();
+    reader.onload = function(event) {
+      msg.innerText = "Đang tải lên Google Drive...";
+      let fileData = event.target.result;
+
+      google.script.run.withSuccessHandler(function(res) {
+        btn.disabled = false;
+        spinner.classList.add("d-none");
+
+        if(res.success) {
+          msg.className = "mt-3 text-center fw-bold text-success";
+          msg.innerText = res.message;
+          document.getElementById("form-upload-pdf").reset();
+          loadAdminTaiLieu(); // Cập nhật lại bảng
+          setTimeout(() => { msg.innerText = ""; }, 3000);
+        } else {
+          msg.className = "mt-3 text-center fw-bold text-danger";
+          msg.innerText = res.message;
+        }
+      }).uploadPDFFile(adminToken, fileData, ten, sohieu, loai);
+    };
+    reader.onerror = function(error) {
+      btn.disabled = false;
+      spinner.classList.add("d-none");
+      msg.className = "mt-3 text-center fw-bold text-danger";
+      msg.innerText = "Lỗi đọc tệp ở trình duyệt: " + error;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // --- MODULE GIÁO VIÊN ---
+  function loadAdminGiaoVien() {
+    google.script.run.withSuccessHandler(function(res) {
+      if(res.success) {
+        let tbody = document.getElementById("admin-giaovien-tbody");
+        tbody.innerHTML = "";
+        if(res.data.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">Chưa có dữ liệu giáo viên.</td></tr>`;
+          return;
+        }
+        res.data.forEach((row, index) => {
+          let html = `<tr>
+            <td>${row[0]}</td>
+            <td class="fw-bold">${escapeHTML(row[1])}</td>
+            <td>${escapeHTML(row[2])}</td>
+            <td><span class="badge bg-primary">${escapeHTML(row[3])}</span></td>
+            <td class="text-end pe-3">
+              <button class="btn btn-sm btn-outline-primary rounded-circle me-1" onclick="editGiaoVien('${row[0]}', '${escapeHTML(row[1])}', '${escapeHTML(row[2])}', '${escapeHTML(row[3])}')"><i class="bi bi-pencil"></i></button>
+              <button class="btn btn-sm btn-outline-danger rounded-circle" onclick="deleteGiaoVien('${row[0]}')"><i class="bi bi-trash"></i></button>
+            </td>
+          </tr>`;
+          tbody.innerHTML += html;
+        });
+      }
+    }).getGiaoVienData();
+  }
+
+  function openGiaoVienForm() {
+    document.getElementById("form-giaovien").reset();
+    document.getElementById("gv-id").value = "";
+    document.getElementById("giaovien-form-title").innerText = "Thêm Giáo viên mới";
+    document.getElementById("giaovien-form-container").classList.remove("d-none");
+  }
+
+  function closeGiaoVienForm() {
+    document.getElementById("giaovien-form-container").classList.add("d-none");
+  }
+
+  function editGiaoVien(id, hoten, chuyenmon, nghe) {
+    document.getElementById("gv-id").value = id;
+    document.getElementById("gv-hoten").value = hoten;
+    document.getElementById("gv-chuyenmon").value = chuyenmon;
+    document.getElementById("gv-nghe").value = nghe;
+    document.getElementById("giaovien-form-title").innerText = "Sửa thông tin Giáo viên";
+    document.getElementById("giaovien-form-container").classList.remove("d-none");
+  }
+
+  function submitGiaoVien(e) {
+    e.preventDefault();
+    let btn = document.getElementById("btn-save-gv");
+    let spinner = document.getElementById("gv-spinner");
+    btn.disabled = true; spinner.classList.remove("d-none");
+
+    let id = document.getElementById("gv-id").value;
+    let hoten = document.getElementById("gv-hoten").value;
+    let chuyenmon = document.getElementById("gv-chuyenmon").value;
+    let nghe = document.getElementById("gv-nghe").value;
+
+    google.script.run.withSuccessHandler(function(res) {
+      btn.disabled = false; spinner.classList.add("d-none");
+      if(res.success) {
+        alert(res.message); closeGiaoVienForm(); loadAdminGiaoVien();
+      } else alert("Lỗi: " + res.message);
+    }).saveGiaoVien(adminToken, id, hoten, chuyenmon, nghe);
+  }
+
+  function deleteGiaoVien(id) {
+    if(confirm("Xóa giáo viên này?")) {
+      google.script.run.withSuccessHandler(function(res) {
+        if(res.success) loadAdminGiaoVien(); else alert("Lỗi: " + res.message);
+      }).deleteGiaoVien(adminToken, id);
+    }
+  }
+
+  // --- MODULE CƠ SỞ VẬT CHẤT ---
+  function loadAdminCoSoVatChat() {
+    google.script.run.withSuccessHandler(function(res) {
+      if(res.success) {
+        let tbody = document.getElementById("admin-csvc-tbody");
+        tbody.innerHTML = "";
+        if(res.data.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">Chưa có dữ liệu cơ sở vật chất.</td></tr>`;
+          return;
+        }
+        res.data.forEach((row, index) => {
+          let html = `<tr>
+            <td>${row[0]}</td>
+            <td class="fw-bold">${escapeHTML(row[1])}</td>
+            <td>${escapeHTML(row[2])}</td>
+            <td>${escapeHTML(row[3])}</td>
+            <td>${escapeHTML(row[4])}</td>
+            <td class="text-end pe-3">
+              <button class="btn btn-sm btn-outline-primary rounded-circle me-1" onclick="editCoSoVatChat('${row[0]}', '${escapeHTML(row[1])}', '${escapeHTML(row[2])}', '${escapeHTML(row[3])}', '${escapeHTML(row[4])}')"><i class="bi bi-pencil"></i></button>
+              <button class="btn btn-sm btn-outline-danger rounded-circle" onclick="deleteCoSoVatChat('${row[0]}')"><i class="bi bi-trash"></i></button>
+            </td>
+          </tr>`;
+          tbody.innerHTML += html;
+        });
+      }
+    }).getCoSoVatChatData();
+  }
+
+  function openCoSoVatChatForm() {
+    document.getElementById("form-csvc").reset();
+    document.getElementById("cs-id").value = "";
+    document.getElementById("csvc-form-title").innerText = "Thêm Cơ sở vật chất mới";
+    document.getElementById("csvc-form-container").classList.remove("d-none");
+  }
+
+  function closeCoSoVatChatForm() {
+    document.getElementById("csvc-form-container").classList.add("d-none");
+  }
+
+  function editCoSoVatChat(id, ten, soluong, tinhtrang, ghichu) {
+    document.getElementById("cs-id").value = id;
+    document.getElementById("cs-ten").value = ten;
+    document.getElementById("cs-soluong").value = soluong;
+    document.getElementById("cs-tinhtrang").value = tinhtrang;
+    document.getElementById("cs-ghichu").value = ghichu;
+    document.getElementById("csvc-form-title").innerText = "Sửa thông tin Cơ sở vật chất";
+    document.getElementById("csvc-form-container").classList.remove("d-none");
+  }
+
+  function submitCoSoVatChat(e) {
+    e.preventDefault();
+    let btn = document.getElementById("btn-save-cs");
+    let spinner = document.getElementById("cs-spinner");
+    btn.disabled = true; spinner.classList.remove("d-none");
+
+    let id = document.getElementById("cs-id").value;
+    let ten = document.getElementById("cs-ten").value;
+    let soluong = document.getElementById("cs-soluong").value;
+    let tinhtrang = document.getElementById("cs-tinhtrang").value;
+    let ghichu = document.getElementById("cs-ghichu").value;
+
+    google.script.run.withSuccessHandler(function(res) {
+      btn.disabled = false; spinner.classList.add("d-none");
+      if(res.success) {
+        alert(res.message); closeCoSoVatChatForm(); loadAdminCoSoVatChat();
+      } else alert("Lỗi: " + res.message);
+    }).saveCoSoVatChat(adminToken, id, ten, soluong, tinhtrang, ghichu);
+  }
+
+  function deleteCoSoVatChat(id) {
+    if(confirm("Xóa cơ sở vật chất này?")) {
+      google.script.run.withSuccessHandler(function(res) {
+        if(res.success) loadAdminCoSoVatChat(); else alert("Lỗi: " + res.message);
+      }).deleteCoSoVatChat(adminToken, id);
+    }
+  }
+</script>

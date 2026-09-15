@@ -1,0 +1,20 @@
+<!-- Modal Xem PDF -->
+<div class="modal fade" id="pdfViewerModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered" style="height: 90vh; max-width: 95%;">
+    <div class="modal-content h-100 border-0 rounded-4 shadow-lg overflow-hidden">
+      <div class="modal-header bg-primary text-white border-bottom-0 py-3">
+        <h5 class="modal-title fw-bold" id="pdfModalTitle"><i class="bi bi-file-earmark-pdf-fill me-2"></i>Trình xem Tài liệu</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-0 h-100 bg-light position-relative">
+        <!-- Spinner Loading (Sẽ ẩn khi iframe load xong nếu bắt được sự kiện) -->
+        <div class="position-absolute top-50 start-50 translate-middle text-center text-primary" id="pdf-loading">
+           <div class="spinner-border mb-2" role="status" style="width: 3rem; height: 3rem;"></div>
+           <p class="fw-bold">Đang tải tài liệu...</p>
+        </div>
+        <!-- Khung iframe xem PDF nhúng trực tiếp Google Drive -->
+        <iframe id="pdfIframe" src="" style="width: 100%; height: 100%; border: none; position: relative; z-index: 2;" onload="document.getElementById('pdf-loading').style.display='none'"></iframe>
+      </div>
+    </div>
+  </div>
+</div>

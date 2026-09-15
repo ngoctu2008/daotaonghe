@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Hồ sơ năng lực - Trung tâm GDNN - GDTX khu vực Đăk Hà</title>
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+  <!-- AOS Animation CSS -->
+  <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+
+  <?!= include('CSS'); ?>
+</head>
+<body>
+
+  <!-- Thanh Navigation -->
+  <?!= include('Header'); ?>
+
+  <!-- Container Nội dung chính -->
+  <div class="container my-4">
+
+    <!-- PHÂN HỆ NGƯỜI DÙNG (Mặc định hiển thị) -->
+    <div id="public-view-section">
+      <?!= include('PublicView'); ?>
+    </div>
+
+    <!-- PHÂN HỆ QUẢN TRỊ (Khóa/Chỉ hiển thị khi đăng nhập) -->
+    <div id="admin-view-section" style="display: none;">
+      <?!= include('AdminView'); ?>
+    </div>
+
+  </div>
+
+  <!-- Pop-up Đăng nhập Admin -->
+  <?!= include('LoginModal'); ?>
+
+  <!-- Pop-up Trình xem PDF -->
+  <?!= include('PDFViewerModal'); ?>
+
+  <!-- Bootstrap & Custom Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- AOS Animation JS -->
+  <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+
+  <?!= include('JS'); ?>
+</body>
+</html>
